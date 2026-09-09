@@ -55,6 +55,7 @@ const caseSchema = new mongoose.Schema({
     assignedAt: Date,
     notes: String,
   },
+  completedAt: { type: Date },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Case', caseSchema);
