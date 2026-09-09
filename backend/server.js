@@ -8,8 +8,10 @@ const caseRoutes = require('./routes/caseRoutes');
 connectDB();
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://visit-track-pv0f.onrender.com'],
+  credentials: true,
+}));app.use(express.json());
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRoutes);
