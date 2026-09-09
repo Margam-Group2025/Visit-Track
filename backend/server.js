@@ -9,7 +9,7 @@ connectDB();
 
 const app = express();
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://visit-track-pv0f.onrender.com'],
+  origin: ['http://localhost:5173', 'https://visit-track-woad.vercel.app'],
   credentials: true,
 }));app.use(express.json());
 
