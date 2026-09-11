@@ -55,7 +55,26 @@ const caseSchema = new mongoose.Schema({
     assignedAt: Date,
     notes: String,
   },
+  stoForm: {
+  submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  data: { type: mongoose.Schema.Types.Mixed, default: {} },   // dynamic fields
+  files: [fileSchema],
+  submittedAt: Date,
+},
+technicalForm: {
+  reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  approved: { type: Boolean, default: false },
+  data: { type: mongoose.Schema.Types.Mixed, default: {} },   //naya
+  files: [fileSchema],
+  submittedAt: Date,
+},
+operationForm: {
+  preparedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  data: { type: mongoose.Schema.Types.Mixed, default: {} },   //naya
+  files: [fileSchema],
+  submittedAt: Date,
+},
   completedAt: { type: Date },
 }, { timestamps: true });
-
+   
 module.exports = mongoose.model('Case', caseSchema);
