@@ -64,13 +64,14 @@ const caseSchema = new mongoose.Schema({
 technicalForm: {
   reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   approved: { type: Boolean, default: false },
-  data: { type: mongoose.Schema.Types.Mixed, default: {} },   //naya
+  data: { type: mongoose.Schema.Types.Mixed, default: {} },  
   files: [fileSchema],
   submittedAt: Date,
 },
 operationForm: {
   preparedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  data: { type: mongoose.Schema.Types.Mixed, default: {} },   //naya
+  data: { type: mongoose.Schema.Types.Mixed, default: {} }, 
+  quotationFile: fileSchema,  
   files: [fileSchema],
   submittedAt: Date,
 },

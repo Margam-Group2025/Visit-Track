@@ -20,7 +20,16 @@ router.get('/all', verifyToken, checkRole('admin'), getAllCasesForAdmin);
 router.get('/crm-users', verifyToken, checkRole('admin'), getCrmUsers);
 router.get('/:id', verifyToken, getCaseById);
 router.put('/:id/technical-review', verifyToken, checkRole('technical'), upload.array('files', 5), submitTechnicalReview);
-router.put('/:id/operation-review', verifyToken, checkRole('operation'), upload.array('files', 5), submitOperationReview);
+router.put(
+  '/:id/operation-review',
+  verifyToken,
+  checkRole('operation'),
+  upload.fields([
+    { name: 'quotationFile', maxCount: 1 },
+    { name: 'files', maxCount: 5 },
+  ]),
+  submitOperationReview
+);
 router.put('/:id/admin-approve', verifyToken, checkRole('admin'), adminApproveAndAssign);
 router.put('/:id/complete', verifyToken, checkRole('admin'), markCaseCompleted);
 

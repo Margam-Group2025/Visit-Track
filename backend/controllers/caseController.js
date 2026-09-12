@@ -93,20 +93,30 @@ const getOperationPendingCases = async (req, res) => {
 // PUT /api/cases/:id/operation-review
 const submitOperationReview = async (req, res) => {
   try {
-    const { finalReport, quotationLink } = req.body;
+    const { data } = req.body;
+    const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+
     const singleCase = await Case.findById(req.params.id);
     if (!singleCase) return res.status(404).json({ message: 'Case not found' });
 
-    const files = (req.files || []).map((f) => ({
+    const quotationFileUpload = req.files?.quotationFile?.[0];
+    const generalFiles = (req.files?.files || []).map((f) => ({
       fileName: f.originalname,
       fileUrl: f.path,
     }));
 
+    if (!quotationFileUpload) {
+      return res.status(400).json({ message: 'Quotation file is required' });
+    }
+
     singleCase.operationForm = {
       preparedBy: req.user._id,
-      finalReport,
-      quotationLink,
-      files,
+      data: parsedData,
+      quotationFile: {
+        fileName: quotationFileUpload.originalname,
+        fileUrl: quotationFileUpload.path,
+      },
+      files: generalFiles,
       submittedAt: new Date(),
     };
     singleCase.status = 'admin_pending';

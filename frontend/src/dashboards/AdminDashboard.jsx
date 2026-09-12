@@ -1,13 +1,21 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  UserPlus, Users as UsersIcon, Settings2, ArrowLeft,
-  CheckCircle2, Link2, UserCheck, ShieldCheck, Loader2,
+  UserPlus,
+  Users as UsersIcon,
+  ArrowLeft,
+  CheckCircle2,
+  Link2,
+  UserCheck,
+  ShieldCheck,
+  Loader2,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import CaseCard from '../components/CaseCard';
 import FormBuilder from '../components/FormBuilder';
+import CaseDataDisplay from '../components/CaseDataDisplay';
 import { createUser, getAllUsers } from '../api/userApi';
+import { getTemplate } from '../api/formTemplateApi';
 import {
   getAdminPendingCases,
   getAllCasesForAdmin,
@@ -44,6 +52,11 @@ const AdminDashboard = () => {
   const [userMessage, setUserMessage] = useState('');
   const [userLoading, setUserLoading] = useState(false);
 
+  // ---- Form templates (for dynamic report display) ----
+  const [stoTemplate, setStoTemplate] = useState(null);
+  const [technicalTemplate, setTechnicalTemplate] = useState(null);
+  const [operationTemplate, setOperationTemplate] = useState(null);
+
   const fetchCaseData = async () => {
     try {
       const [pending, all, crm] = await Promise.all([
@@ -63,6 +76,9 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchCaseData();
+    getTemplate('sto').then(setStoTemplate);
+    getTemplate('technical').then(setTechnicalTemplate);
+    getTemplate('operation').then(setOperationTemplate);
   }, []);
 
   useEffect(() => {
@@ -304,27 +320,30 @@ const AdminDashboard = () => {
               </div>
               <p className="font-mono text-sm text-[var(--text-muted)] mb-5">{selectedCase.caseNumber}</p>
 
-              {selectedCase.stoForm?.situationDetails && (
+              {/* STO Report — dynamic */}
+              {selectedCase.stoForm?.data && (
                 <div className="rounded-xl p-4 mb-3 space-y-1" style={{ background: 'var(--code-bg)', border: '1px solid var(--border)' }}>
-                  <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>STO Report</p>
-                  <p className="text-sm text-[var(--text)]">{selectedCase.stoForm.situationDetails}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--accent)' }}>STO Report</p>
+                  <CaseDataDisplay fields={stoTemplate?.fields} data={selectedCase.stoForm.data} />
                 </div>
               )}
 
-              {selectedCase.technicalForm?.technicalDetails && (
+              {/* Technical Report — dynamic */}
+              {selectedCase.technicalForm?.data && (
                 <div className="rounded-xl p-4 mb-3 space-y-1" style={{ background: 'var(--code-bg)', border: '1px solid var(--border)' }}>
-                  <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>Technical Report</p>
-                  <p className="text-sm text-[var(--text)]">{selectedCase.technicalForm.technicalDetails}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--accent)' }}>Technical Report</p>
+                  <CaseDataDisplay fields={technicalTemplate?.fields} data={selectedCase.technicalForm.data} />
                 </div>
               )}
 
-              {selectedCase.operationForm?.finalReport && (
+              {/* Operation Final Report — dynamic + quotation file */}
+              {(selectedCase.operationForm?.data || selectedCase.operationForm?.quotationFile) && (
                 <div className="rounded-xl p-4 mb-6 space-y-2" style={{ background: 'var(--code-bg)', border: '1px solid var(--border)' }}>
-                  <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>Final Report (Operation)</p>
-                  <p className="text-sm text-[var(--text)]">{selectedCase.operationForm.finalReport}</p>
-                  {selectedCase.operationForm.quotationLink && (
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--accent)' }}>Final Report (Operation)</p>
+                  <CaseDataDisplay fields={operationTemplate?.fields} data={selectedCase.operationForm?.data} />
+                  {selectedCase.operationForm?.quotationFile?.fileUrl && (
                     <a
-                      href={selectedCase.operationForm.quotationLink}
+                      href={selectedCase.operationForm.quotationFile.fileUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-1.5 text-sm hover:underline mt-2"

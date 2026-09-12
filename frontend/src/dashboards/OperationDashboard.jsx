@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, CheckCircle2, Boxes, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Boxes, Loader2, ExternalLink, FileUp } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import CaseCard from '../components/CaseCard';
 import DynamicFormRenderer from '../components/DynamicFormRenderer';
@@ -16,6 +16,7 @@ const OperationDashboard = () => {
   const [myTemplate, setMyTemplate] = useState(null);
   const [values, setValues] = useState({});
   const [fileValues, setFileValues] = useState({});
+  const [quotationFile, setQuotationFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -32,6 +33,7 @@ const OperationDashboard = () => {
     setSelectedCase(c);
     setValues({});
     setFileValues({});
+    setQuotationFile(null);
     setMessage('');
   };
 
@@ -40,15 +42,21 @@ const OperationDashboard = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!quotationFile) {
+      setMessage('Please upload the quotation file');
+      return;
+    }
     setLoading(true);
     try {
       const formData = new FormData();
       formData.append('data', JSON.stringify(values));
+      formData.append('quotationFile', quotationFile);
       Object.values(fileValues).forEach((file) => file && formData.append('files', file));
 
       await submitOperationReview(selectedCase._id, formData);
       setMessage('Final report sent to Admin for approval');
       setSelectedCase(null);
+      setQuotationFile(null);
       fetchCases();
     } catch (err) {
       setMessage(err.response?.data?.message || 'Something went wrong');
@@ -99,6 +107,44 @@ const OperationDashboard = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Fixed Quotation section — not part of Admin's dynamic fields */}
+              <div
+                className="rounded-xl p-4 space-y-3"
+                style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}
+              >
+                <p className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>Quotation</p>
+
+                <a
+                  href="https://bricknbath-quotation-maker.vercel.app/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg transition"
+                  style={{ background: 'var(--accent)', color: '#fff' }}
+                >
+                  <ExternalLink size={15} /> Open Quotation Maker
+                </a>
+
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-h)] mb-1.5">
+                    Upload Quotation File <span style={{ color: 'var(--accent)' }}>*</span>
+                  </label>
+                  <label
+                    className="flex items-center gap-2 rounded-xl py-3 px-4 cursor-pointer text-sm transition"
+                    style={{ background: 'var(--surface)', border: '2px dashed var(--accent-border)', color: 'var(--text)' }}
+                  >
+                    <FileUp size={16} style={{ color: 'var(--accent)' }} />
+                    {quotationFile ? quotationFile.name : 'Click to upload the downloaded quotation'}
+                    <input
+                      type="file"
+                      onChange={(e) => setQuotationFile(e.target.files[0])}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <hr style={{ borderColor: 'var(--border)' }} />
+
               <p className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>Final Report</p>
 
               {myTemplate === null ? (
@@ -112,9 +158,13 @@ const OperationDashboard = () => {
                 />
               )}
 
-              <motion.button whileTap={{ scale: 0.98 }} type="submit" disabled={loading}
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={loading}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-white transition disabled:opacity-50"
-                style={{ background: 'var(--accent)' }}>
+                style={{ background: 'var(--accent)' }}
+              >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
                 {loading ? 'Submitting...' : 'Send to Admin for Approval'}
               </motion.button>

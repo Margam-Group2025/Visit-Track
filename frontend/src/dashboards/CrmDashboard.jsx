@@ -105,9 +105,9 @@ const CrmDashboard = () => {
               <MapPin size={13} /> {selectedCase.siteAddress}
             </p>
 
-            {selectedCase.operationForm?.quotationLink && (
+            {selectedCase.operationForm?.quotationLink.fileUrl && (
               <a
-                href={selectedCase.operationForm.quotationLink}
+                href={selectedCase.operationForm.quotationLink.fileUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm mb-4 hover:underline"
