@@ -9,25 +9,36 @@ const inputStyle = { background: 'var(--code-bg)', border: '1px solid var(--bord
 const FormBuilder = () => {
   const [department, setDepartment] = useState('sto');
   const [fields, setFields] = useState([]);
+  const [optionsText, setOptionsText] = useState({}); // fieldId -> raw text while typing
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
   const loadTemplate = async (dept) => {
     const t = await getTemplate(dept);
-    setFields(t.fields || []);
+    const loadedFields = t.fields || [];
+    setFields(loadedFields);
+
+    // seed the raw text state from saved options
+    const textMap = {};
+    loadedFields.forEach((f) => {
+      textMap[f.fieldId] = (f.options || []).join(', ');
+    });
+    setOptionsText(textMap);
   };
 
   useEffect(() => { loadTemplate(department); }, [department]);
 
   const addField = () => {
-    setFields([...fields, {
+    const newField = {
       fieldId: `field_${Date.now()}`,
       label: '',
       fieldType: 'text',
       required: false,
       options: [],
       order: fields.length,
-    }]);
+    };
+    setFields([...fields, newField]);
+    setOptionsText((prev) => ({ ...prev, [newField.fieldId]: '' }));
   };
 
   const updateField = (index, key, value) => {
@@ -37,7 +48,25 @@ const FormBuilder = () => {
   };
 
   const removeField = (index) => {
+    const fieldId = fields[index].fieldId;
     setFields(fields.filter((_, i) => i !== index));
+    setOptionsText((prev) => {
+      const copy = { ...prev };
+      delete copy[fieldId];
+      return copy;
+    });
+  };
+
+  // While typing — just update the raw text, don't touch the fields array yet
+  const handleOptionsTyping = (fieldId, text) => {
+    setOptionsText((prev) => ({ ...prev, [fieldId]: text }));
+  };
+
+  // On blur — commit the parsed array into the actual field
+  const commitOptions = (index, fieldId) => {
+    const text = optionsText[fieldId] || '';
+    const parsed = text.split(',').map((s) => s.trim()).filter(Boolean);
+    updateField(index, 'options', parsed);
   };
 
   const handleSave = async () => {
@@ -103,13 +132,26 @@ const FormBuilder = () => {
             </div>
 
             {field.fieldType === 'select' && (
-              <input
-                placeholder="Options comma-separated (e.g. Low, Medium, High)"
-                value={field.options?.join(', ') || ''}
-                onChange={(e) => updateField(i, 'options', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))}
-                className="w-full px-3 py-2 rounded-lg outline-none text-sm"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-h)' }}
-              />
+              <div>
+                <input
+                  placeholder="Options comma-separated (e.g. Low, Medium, High)"
+                  value={optionsText[field.fieldId] ?? ''}
+                  onChange={(e) => handleOptionsTyping(field.fieldId, e.target.value)}
+                  onBlur={() => commitOptions(i, field.fieldId)}
+                  className="w-full px-3 py-2 rounded-lg outline-none text-sm"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-h)' }}
+                />
+                {field.options?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {field.options.map((opt, idx) => (
+                      <span key={idx} className="text-xs px-2 py-0.5 rounded-full"
+                        style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                        {opt}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
             <label className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
