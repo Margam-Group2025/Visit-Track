@@ -4,7 +4,7 @@ const {
   createCase, getCases, getTechnicalPendingCases, getCaseById,
   submitTechnicalReview, getOperationPendingCases, submitOperationReview,
   getAdminPendingCases, getAllCasesForAdmin, getCrmUsers, adminApproveAndAssign,
-  getCrmAssignedCases, getMyCases, markCaseCompleted,
+  getCrmAssignedCases, getMyCases, markCaseCompleted, updateMyStageData,
 } = require('../controllers/caseController');
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 const upload = require('../middleware/upload');
@@ -20,6 +20,7 @@ router.get('/all', verifyToken, checkRole('admin'), getAllCasesForAdmin);
 router.get('/crm-users', verifyToken, checkRole('admin'), getCrmUsers);
 router.get('/:id', verifyToken, getCaseById);
 router.put('/:id/technical-review', verifyToken, checkRole('technical'), upload.array('files', 5), submitTechnicalReview);
+router.put('/:id/edit-my-data', verifyToken, updateMyStageData);
 router.put(
   '/:id/operation-review',
   verifyToken,

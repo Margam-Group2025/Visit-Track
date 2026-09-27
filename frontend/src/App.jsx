@@ -7,6 +7,8 @@ import TechnicalDashboard from './dashboards/TechnicalDashboard';
 import OperationDashboard from './dashboards/OperationDashboard';
 import AdminDashboard from './dashboards/AdminDashboard';
 import CrmDashboard from './dashboards/CrmDashboard';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
           <Route path="/operation-dashboard" element={<ProtectedRoute allowedRole="operation"><OperationDashboard /></ProtectedRoute>} />
           <Route path="/admin-dashboard" element={<ProtectedRoute allowedRole="admin"><AdminDashboard /></ProtectedRoute>} />
           <Route path="/crm-dashboard" element={<ProtectedRoute allowedRole="crm"><CrmDashboard /></ProtectedRoute>} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>

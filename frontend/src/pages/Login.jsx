@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, HardHat } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
+import { Link } from 'react-router-dom';
 
 const roleRoutes = {
   sto: '/sto-dashboard',
@@ -124,7 +125,11 @@ const Login = () => {
               </button>
             </div>
           </div>
-
+         <div className="text-right -mt-2">
+       <Link to="/forgot-password" className="text-xs hover:underline" style={{ color: 'var(--accent)' }}>
+         Forgot password?
+       </Link>
+      </div>
           <motion.button
             whileTap={{ scale: 0.98 }}
             type="submit"

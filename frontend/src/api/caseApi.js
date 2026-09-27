@@ -71,3 +71,7 @@ export const markCaseCompleted = async (id) => {
   const { data } = await api.put(`/cases/${id}/complete`);
   return data;
 };
+export const updateMyStageData = async (id, values) => {
+  const { data } = await api.put(`/cases/${id}/edit-my-data`, { data: values });
+  return data;
+}

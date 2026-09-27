@@ -1,9 +1,10 @@
 const Case = require('../models/case');
 const user = require('../models/user');
-
+const Lead = require('../models/lead'); 
+ 
 const createCase = async (req, res) => {
   try {
-    const { siteName, siteAddress, data } = req.body;
+    const { siteName, siteAddress, data, leadId } = req.body;  
     const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
 
     const count = await Case.countDocuments();
@@ -15,8 +16,20 @@ const createCase = async (req, res) => {
       caseNumber,
       siteName,
       siteAddress,
+      leadId: leadId || null,   
       status: 'technical_pending',
       stoForm: { submittedBy: req.user._id, data: parsedData, files, submittedAt: new Date() },
+    });
+
+    if (leadId) {
+      await Lead.findByIdAndUpdate(leadId, { status: 'visited', caseId: newCase._id });
+    }
+
+    // Notify Technical team (existing code)
+    const technicalUsers = await User.find({ role: 'technical', isActive: true });
+    technicalUsers.forEach((u) => {
+      sendEmail(u.email, `New Case Assigned — ${newCase.caseNumber}`,
+        `A new site visit case "${newCase.siteName}" has been submitted by STO and needs your technical review.`);
     });
 
     res.status(201).json(newCase);
@@ -252,9 +265,40 @@ const markCaseCompleted = async (req, res) => {
   }
 };
 
+// PUT /api/cases/:id/edit-my-data — user apna khud ka submitted data edit kare
+const updateMyStageData = async (req, res) => {
+  try {
+    const { data } = req.body;
+    const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+
+    const singleCase = await Case.findById(req.params.id);
+    if (!singleCase) return res.status(404).json({ message: 'Case not found' });
+
+    const role = req.user.role;
+    const formKeyMap = { sto: 'stoForm', technical: 'technicalForm', operation: 'operationForm' };
+    const ownerFieldMap = { sto: 'submittedBy', technical: 'reviewedBy', operation: 'preparedBy' };
+
+    const formKey = formKeyMap[role];
+    const ownerField = ownerFieldMap[role];
+    if (!formKey) return res.status(403).json({ message: 'Not applicable for this role' });
+
+    const ownerId = singleCase[formKey]?.[ownerField];
+    if (!ownerId || ownerId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You can only edit your own submission' });
+    }
+
+    singleCase[formKey].data = { ...singleCase[formKey].data, ...parsedData };
+    await singleCase.save();
+
+    res.json(singleCase);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createCase, getCases, getTechnicalPendingCases, getCaseById,
   submitTechnicalReview, getOperationPendingCases, submitOperationReview,
   getAdminPendingCases, getAllCasesForAdmin, getCrmUsers, adminApproveAndAssign,
-  getCrmAssignedCases, getMyCases, markCaseCompleted,
+  getCrmAssignedCases, getMyCases, markCaseCompleted, updateMyStageData,
 };

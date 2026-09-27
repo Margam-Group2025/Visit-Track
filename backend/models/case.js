@@ -10,6 +10,7 @@ const caseSchema = new mongoose.Schema({
   caseNumber: { type: String, required: true, unique: true },
   siteName: { type: String, required: true },
   siteAddress: { type: String },
+  leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', default: null }, 
 
   status: {
     type: String,
