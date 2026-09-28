@@ -8,6 +8,7 @@ import CaseDataDisplay from '../components/CaseDataDisplay';
 import EditableCaseData from '../components/EditableCaseData';
 import CaseTimeline from '../components/CaseTimeline';
 import MyCasesList from '../components/MyCasesList';
+import { markCaseViewed } from '../api/caseApi'; 
 import { getTemplate } from '../api/formTemplateApi';
 import { getTechnicalPendingCases, submitTechnicalReview, getMyCases } from '../api/caseApi';
 
@@ -42,6 +43,7 @@ const TechnicalDashboard = () => {
   }, [tab]);
 
   const openCase = (c) => {
+    markCaseViewed(c._id);  // Mark the case as viewed when opened
     setSelectedCase(c);
     setValues({});
     setFileValues({});

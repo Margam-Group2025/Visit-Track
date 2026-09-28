@@ -8,6 +8,7 @@ import MyCasesList from '../components/MyCasesList';
 import { getTemplate } from '../api/formTemplateApi';
 import { createCase, getMyCases } from '../api/caseApi';
 import { getMyAssignedLeads } from '../api/leadApi';
+import { formatDateTime } from '../utils/formatDate';
 
 const StoDashboard = () => {
   const [tab, setTab] = useState('leads'); // 'leads' | 'new' | 'mycases'
@@ -132,7 +133,9 @@ const StoDashboard = () => {
                     <p className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
                       <MapPin size={11} /> {lead.location}
                     </p>
-                    {lead.notes && <p className="text-xs text-[var(--text)] mt-1 italic">{lead.notes}</p>}
+                    {lead.notes && <p className="text-xs text-[var(--text)] mt-1 italic">{lead.notes}</p>
+                    }
+                    <p className="text-xs text-[var(--text-muted)] mt-1">Assigned: {formatDateTime(lead.assignedAt)}</p>
                   </div>
                   <button
                     onClick={() => openLeadForm(lead)}
@@ -176,7 +179,7 @@ const StoDashboard = () => {
                 <h3 className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>Site Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-h)] mb-1.5">Site Name</label>
+                    <label className="block text-sm font-medium text-[var(--text-h)] mb-1.5">Name</label>
                     <input
                       type="text" value={siteName} onChange={(e) => setSiteName(e.target.value)} required
                       className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={inputStyle}

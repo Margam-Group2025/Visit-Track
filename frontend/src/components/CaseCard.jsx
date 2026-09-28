@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { MapPin } from 'lucide-react';
+import { formatDateTime } from '../utils/formatDate';
 
 const statusLabels = {
   sto_pending: 'STO Pending',
@@ -39,6 +40,9 @@ const CaseCard = ({ c, onClick, index = 0 }) => {
         <p className="text-sm text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
           <MapPin size={13} /> {c.siteAddress}
         </p>
+        <p className="text-xs text-[var(--text-muted)] mt-1">
+          Sent: {formatDateTime(c.updatedAt)}
+         </p>
       </div>
       <div className="flex items-center gap-2">
         <span

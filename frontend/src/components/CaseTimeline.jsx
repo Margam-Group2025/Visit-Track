@@ -1,4 +1,5 @@
-import { CheckCircle2, Circle, Clock } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Eye, Pencil } from 'lucide-react';
+import { formatDateTime } from '../utils/formatDate';
 
 const stages = [
   { key: 'stoForm', label: 'STO Visit' },
@@ -8,62 +9,84 @@ const stages = [
   { key: 'crmAssignment', label: 'CRM Assigned' },
 ];
 
-const formatDate = (d) =>
-  new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-
 const CaseTimeline = ({ caseData }) => {
   const isRejected = caseData.status === 'rejected';
   const isCompleted = caseData.status === 'completed';
+  const log = [...(caseData.activityLog || [])].sort((a, b) => new Date(a.at) - new Date(b.at));
+
+  const iconFor = (action) => {
+    if (action.endsWith('_viewed')) return <Eye size={13} className="text-[var(--text-muted)]" />;
+    if (action === 'edited') return <Pencil size={13} style={{ color: '#b45309' }} />;
+    return <CheckCircle2 size={13} style={{ color: 'var(--accent)' }} />;
+  };
 
   return (
-    <div className="space-y-0">
-      {stages.map((stage, i) => {
-        const data = caseData[stage.key];
-        const timestamp = data?.submittedAt || data?.approvedAt || data?.assignedAt;
-        const done = Boolean(timestamp);
-        const isLast = i === stages.length - 1;
+    <div className="space-y-6">
+      {/* Stage progress */}
+      <div>
+        {stages.map((stage, i) => {
+          const data = caseData[stage.key];
+          const timestamp = data?.submittedAt || data?.approvedAt || data?.assignedAt;
+          const done = Boolean(timestamp);
+          const isLast = i === stages.length - 1;
 
-        return (
-          <div key={stage.key} className="flex gap-3">
-            <div className="flex flex-col items-center">
-              {done ? (
-                <CheckCircle2 size={20} style={{ color: 'var(--accent)' }} className="shrink-0" />
-              ) : (
-                <Circle size={20} className="shrink-0 text-[var(--text-muted)]" />
-              )}
-              {!isLast && (
-                <div
-                  className="w-px flex-1 my-1"
-                  style={{ background: done ? 'var(--accent)' : 'var(--border)', minHeight: '28px' }}
-                />
-              )}
-            </div>
-            <div className="pb-6">
-              <p className="text-sm font-medium" style={{ color: done ? 'var(--text-h)' : 'var(--text-muted)' }}>
-                {stage.label}
-              </p>
-              {timestamp ? (
-                <p className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
-                  <Clock size={11} /> {formatDate(timestamp)}
+          return (
+            <div key={stage.key} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                {done ? (
+                  <CheckCircle2 size={20} style={{ color: 'var(--accent)' }} className="shrink-0" />
+                ) : (
+                  <Circle size={20} className="shrink-0 text-[var(--text-muted)]" />
+                )}
+                {!isLast && (
+                  <div
+                    className="w-px flex-1 my-1"
+                    style={{ background: done ? 'var(--accent)' : 'var(--border)', minHeight: '28px' }}
+                  />
+                )}
+              </div>
+              <div className="pb-5">
+                <p className="text-sm font-medium" style={{ color: done ? 'var(--text-h)' : 'var(--text-muted)' }}>
+                  {stage.label}
                 </p>
-              ) : (
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">Pending</p>
-              )}
+                <p className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
+                  <Clock size={11} /> {done ? formatDateTime(timestamp) : 'Pending'}
+                </p>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
 
-      {(isCompleted || isRejected) && (
-        <div
-          className="text-xs font-medium px-3 py-2 rounded-lg inline-block mt-1"
-          style={
-            isCompleted
-              ? { background: '#f0fdf4', color: '#15803d' }
-              : { background: '#fef2f2', color: '#dc2626' }
-          }
-        >
-          {isCompleted ? 'Case Completed' : 'Case Rejected'}
+        {(isCompleted || isRejected) && (
+          <div
+            className="text-xs font-medium px-3 py-2 rounded-lg inline-block"
+            style={isCompleted ? { background: '#f0fdf4', color: '#15803d' } : { background: '#fef2f2', color: '#dc2626' }}
+          >
+            {isCompleted ? `Completed on ${formatDateTime(caseData.completedAt)}` : 'Case Rejected'}
+          </div>
+        )}
+      </div>
+
+      {/* Full activity log */}
+      {log.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--accent)' }}>
+            Activity Log
+          </p>
+          <div className="space-y-2.5">
+            {log.map((l, i) => (
+              <div key={i} className="flex gap-2.5 text-sm">
+                <div className="mt-0.5 shrink-0">{iconFor(l.action)}</div>
+                <div className="min-w-0">
+                  <p className="text-[var(--text-h)]">{l.label}</p>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    {l.by?.name ? `${l.by.name} · ` : ''}
+                    {formatDateTime(l.at)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

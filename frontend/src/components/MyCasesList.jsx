@@ -41,6 +41,9 @@ const MyCasesList = ({ cases, expandedCase, onToggle, renderContent, emptyText }
                 <p className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
                   <MapPin size={11} /> <span className="font-mono">{c.caseNumber}</span>
                 </p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                   Created: {formatDateTime(c.createdAt)}
+                </p>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-2">
                 <span

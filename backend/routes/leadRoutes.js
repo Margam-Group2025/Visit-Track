@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+import { updateLead } from '../controllers/leadController';
 const {
   createLead, getMyLeads, getAllLeads, getStoUsers, assignLead, getMyAssignedLeads,
 } = require('../controllers/leadController');
@@ -11,5 +12,6 @@ router.get('/all', verifyToken, checkRole('admin'), getAllLeads);
 router.get('/sto-users', verifyToken, checkRole('crm'), getStoUsers);
 router.get('/assigned-to-me', verifyToken, checkRole('sto'), getMyAssignedLeads);
 router.put('/:id/assign', verifyToken, checkRole('crm'), assignLead);
+router.put('/:id', verifyToken, checkRole('crm'), updateLead);
 
 module.exports = router;

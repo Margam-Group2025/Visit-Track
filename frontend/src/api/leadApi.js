@@ -29,3 +29,7 @@ export const getMyAssignedLeads = async () => {
   const { data } = await api.get('/leads/assigned-to-me');
   return data;
 };
+export const updateLead = async (id, payload) => {
+  const { data } = await api.put(`/leads/${id}`, payload);
+  return data;
+};

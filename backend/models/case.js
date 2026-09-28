@@ -6,12 +6,21 @@ const fileSchema = new mongoose.Schema({
   uploadedAt: { type: Date, default: Date.now },
 }, { _id: false });
 
+const activitySchema = new mongoose.Schema({
+  action: String,
+  label: String,
+  by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  role: String,
+  at: { type: Date, default: Date.now },
+}, { _id: false });
+
 const caseSchema = new mongoose.Schema({
   caseNumber: { type: String, required: true, unique: true },
   siteName: { type: String, required: true },
   siteAddress: { type: String },
   leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', default: null }, 
-
+  completedAt: Date,
+  activityLog: [activitySchema],
   status: {
     type: String,
     enum: ['sto_pending', 'technical_pending', 'operation_pending', 'admin_pending', 'crm_assigned', 'completed', 'rejected'],

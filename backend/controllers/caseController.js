@@ -1,7 +1,8 @@
 const Case = require('../models/case');
 const user = require('../models/user');
 const Lead = require('../models/lead'); 
- 
+const logActivity = require('../utils/logActivity');
+
 const createCase = async (req, res) => {
   try {
     const { siteName, siteAddress, data, leadId } = req.body;  
@@ -19,10 +20,17 @@ const createCase = async (req, res) => {
       leadId: leadId || null,   
       status: 'technical_pending',
       stoForm: { submittedBy: req.user._id, data: parsedData, files, submittedAt: new Date() },
+      activityLog: [{
+        action: 'sto_submitted',
+        label: 'STO submitted site visit report',
+        by: req.user._id,
+        role: 'sto',
+        at: new Date(),
+      }],
     });
-
+      
     if (leadId) {
-      await Lead.findByIdAndUpdate(leadId, { status: 'visited', caseId: newCase._id });
+      await Lead.findByIdAndUpdate(leadId, { status: 'visited', caseId: newCase._id, visitedAt: new Date() });
     }
 
     // Notify Technical team (existing code)
@@ -37,6 +45,7 @@ const createCase = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 // GET /api/cases  (list — filtered by role later)
 const getCases = async (req, res) => {
   try {
@@ -46,6 +55,7 @@ const getCases = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 // GET /api/cases/technical-pending
 const getTechnicalPendingCases = async (req, res) => {
   try {
@@ -83,6 +93,8 @@ const submitTechnicalReview = async (req, res) => {
     singleCase.technicalForm = {
       reviewedBy: req.user._id, approved: true, data: parsedData, files, submittedAt: new Date(),
     };
+
+    logActivity(singleCase, req.user, 'technical_submitted', 'Technical review approved and sent to Operation');
     singleCase.status = 'operation_pending';
     await singleCase.save();
     res.json(singleCase);
@@ -90,6 +102,7 @@ const submitTechnicalReview = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 // GET /api/cases/operation-pending
 const getOperationPendingCases = async (req, res) => {
   try {
@@ -132,6 +145,8 @@ const submitOperationReview = async (req, res) => {
       files: generalFiles,
       submittedAt: new Date(),
     };
+
+    logActivity(singleCase, req.user, 'operation_submitted', 'Operation sent final report and quotation to Admin');
     singleCase.status = 'admin_pending';
 
     await singleCase.save();
@@ -155,7 +170,7 @@ const getAdminPendingCases = async (req, res) => {
   }
 };
 
-// GET /api/cases/all  (admin —  cases,  status)
+// GET /api/cases/all  (admin — cases, status)
 const getAllCasesForAdmin = async (req, res) => {
   try {
     const cases = await Case.find()
@@ -163,6 +178,7 @@ const getAllCasesForAdmin = async (req, res) => {
       .populate('technicalForm.reviewedBy', 'name email')
       .populate('operationForm.preparedBy', 'name email')
       .populate('crmAssignment.assignedTo', 'name email')
+      .populate('activityLog.by', 'name')
       .sort({ createdAt: -1 });
     res.json(cases);
   } catch (error) {
@@ -179,6 +195,7 @@ const getCrmUsers = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 // PUT /api/cases/:id/admin-approve
 const adminApproveAndAssign = async (req, res) => {
   try {
@@ -200,6 +217,7 @@ const adminApproveAndAssign = async (req, res) => {
       notes,
     };
 
+    logActivity(singleCase, req.user, 'admin_approved', 'Admin approved and assigned to CRM');
     singleCase.status = 'crm_assigned';
 
     await singleCase.save();
@@ -208,6 +226,7 @@ const adminApproveAndAssign = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 // GET /api/cases/crm-assigned
 const getCrmAssignedCases = async (req, res) => {
   try {
@@ -217,6 +236,7 @@ const getCrmAssignedCases = async (req, res) => {
     })
       .populate('stoForm.submittedBy', 'name email')
       .populate('operationForm.preparedBy', 'name email')
+      .populate('activityLog.by', 'name')
       .sort({ createdAt: -1 });
     res.json(cases);
   } catch (error) {
@@ -242,6 +262,7 @@ const getMyCases = async (req, res) => {
       .populate('operationForm.preparedBy', 'name')
       .populate('adminApproval.approvedBy', 'name')
       .populate('crmAssignment.assignedTo', 'name')
+      .populate('activityLog.by', 'name')
       .sort({ createdAt: -1 });
 
     res.json(cases);
@@ -256,6 +277,8 @@ const markCaseCompleted = async (req, res) => {
     const singleCase = await Case.findById(req.params.id);
     if (!singleCase) return res.status(404).json({ message: 'Case not found' });
 
+    singleCase.completedAt = new Date();
+    logActivity(singleCase, req.user, 'completed', 'Admin marked case as completed');
     singleCase.status = 'completed';
     await singleCase.save();
 
@@ -288,6 +311,7 @@ const updateMyStageData = async (req, res) => {
     }
 
     singleCase[formKey].data = { ...singleCase[formKey].data, ...parsedData };
+    logActivity(singleCase, req.user, 'edited', `${role.toUpperCase()} edited their submitted data`);
     await singleCase.save();
 
     res.json(singleCase);
@@ -295,10 +319,32 @@ const updateMyStageData = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// PUT /api/cases/:id/mark-viewed
+const markCaseViewed = async (req, res) => {
+  try {
+    if (req.user.role === 'sto') return res.json({ ok: true });
 
+    const singleCase = await Case.findById(req.params.id);
+    if (!singleCase) return res.status(404).json({ message: 'Case not found' });
+
+    const action = `${req.user.role}_viewed`;
+    const alreadyViewed = singleCase.activityLog.some(
+      (l) => l.action === action && l.by?.toString() === req.user._id.toString()
+    );
+
+    if (!alreadyViewed) {
+      logActivity(singleCase, req.user, action, `${req.user.role.toUpperCase()} viewed the report`);
+      await singleCase.save();
+    }
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 module.exports = {
   createCase, getCases, getTechnicalPendingCases, getCaseById,
   submitTechnicalReview, getOperationPendingCases, submitOperationReview,
   getAdminPendingCases, getAllCasesForAdmin, getCrmUsers, adminApproveAndAssign,
   getCrmAssignedCases, getMyCases, markCaseCompleted, updateMyStageData,
+  markCaseViewed,
 };

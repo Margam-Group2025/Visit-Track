@@ -8,6 +8,7 @@ import CaseDataDisplay from '../components/CaseDataDisplay';
 import EditableCaseData from '../components/EditableCaseData';
 import CaseTimeline from '../components/CaseTimeline';
 import MyCasesList from '../components/MyCasesList';
+import { markCaseViewed } from '../api/caseApi';
 import { getTemplate } from '../api/formTemplateApi';
 import { getOperationPendingCases, submitOperationReview, getMyCases } from '../api/caseApi';
 
@@ -43,6 +44,7 @@ const OperationDashboard = () => {
   }, [tab]);
 
   const openCase = (c) => {
+    markCaseViewed(c._id); 
     setSelectedCase(c);
     setValues({});
     setFileValues({});

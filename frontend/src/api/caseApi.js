@@ -75,3 +75,7 @@ export const updateMyStageData = async (id, values) => {
   const { data } = await api.put(`/cases/${id}/edit-my-data`, { data: values });
   return data;
 }
+export const markCaseViewed = async (id) => {
+  const { data } = await api.put(`/cases/${id}/mark-viewed`);
+  return data;
+};
