@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-import { updateLead } from '../controllers/leadController';
 const {
-  createLead, getMyLeads, getAllLeads, getStoUsers, assignLead, getMyAssignedLeads,
+  createLead, getMyLeads, getAllLeads, getStoUsers, assignLead, getMyAssignedLeads,updateLead
 } = require('../controllers/leadController');
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 

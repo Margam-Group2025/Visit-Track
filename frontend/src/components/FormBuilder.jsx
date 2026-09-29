@@ -9,7 +9,7 @@ const inputStyle = { background: 'var(--code-bg)', border: '1px solid var(--bord
 const FormBuilder = () => {
   const [department, setDepartment] = useState('sto');
   const [fields, setFields] = useState([]);
-  const [optionsText, setOptionsText] = useState({}); // fieldId -> raw text while typing
+  const [optionsText, setOptionsText] = useState({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -18,7 +18,6 @@ const FormBuilder = () => {
     const loadedFields = t.fields || [];
     setFields(loadedFields);
 
-    // seed the raw text state from saved options
     const textMap = {};
     loadedFields.forEach((f) => {
       textMap[f.fieldId] = (f.options || []).join(', ');
@@ -57,12 +56,10 @@ const FormBuilder = () => {
     });
   };
 
-  // While typing — just update the raw text, don't touch the fields array yet
   const handleOptionsTyping = (fieldId, text) => {
     setOptionsText((prev) => ({ ...prev, [fieldId]: text }));
   };
 
-  // On blur — commit the parsed array into the actual field
   const commitOptions = (index, fieldId) => {
     const text = optionsText[fieldId] || '';
     const parsed = text.split(',').map((s) => s.trim()).filter(Boolean);
@@ -70,6 +67,12 @@ const FormBuilder = () => {
   };
 
   const handleSave = async () => {
+    const emptyLabelField = fields.find((f) => !f.label.trim());
+    if (emptyLabelField) {
+      setMessage('Please give every field a label before saving.');
+      return;
+    }
+
     setSaving(true);
     setMessage('');
     try {
@@ -81,6 +84,9 @@ const FormBuilder = () => {
       setSaving(false);
     }
   };
+
+  // Options input dikhega select AUR checkbox dono ke liye
+  const needsOptions = (type) => type === 'select' || type === 'checkbox';
 
   return (
     <div className="space-y-5">
@@ -131,10 +137,13 @@ const FormBuilder = () => {
               </button>
             </div>
 
-            {field.fieldType === 'select' && (
+            {needsOptions(field.fieldType) && (
               <div>
+                <label className="block text-xs text-[var(--text-muted)] mb-1">
+                  {field.fieldType === 'checkbox' ? 'Checkbox options (comma-separated)' : 'Dropdown options (comma-separated)'}
+                </label>
                 <input
-                  placeholder="Options comma-separated (e.g. Low, Medium, High)"
+                  placeholder="e.g. Plumbing, Electrical, Tiling, Painting"
                   value={optionsText[field.fieldId] ?? ''}
                   onChange={(e) => handleOptionsTyping(field.fieldId, e.target.value)}
                   onBlur={() => commitOptions(i, field.fieldId)}

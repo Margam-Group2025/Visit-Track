@@ -7,11 +7,13 @@ const CaseDataDisplay = ({ fields, data }) => {
   return (
     <div className="space-y-1.5">
       {Object.entries(data).map(([key, value]) => (
-        <div key={key} className="text-sm">
-          <span className="font-medium text-[var(--text-h)]">{labelMap[key] || key}: </span>
-          <span className="text-[var(--text)]">{String(value)}</span>
-        </div>
-      ))}
+      <div key={key} className="text-sm">
+      <span className="font-medium text-[var(--text-h)]">{labelMap[key] || key}: </span>
+      <span className="text-[var(--text)]">
+      {Array.isArray(value) ? value.join(', ') : String(value)}
+    </span>
+  </div>
+))}
     </div>
   );
 };

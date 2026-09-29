@@ -14,20 +14,59 @@ const DynamicFormRenderer = ({ fields, values, onChange, onFileChange }) => {
     <div className="space-y-4">
       {sorted.map((field) => {
         const Icon = fieldIcons[field.fieldType] || Type;
+if (field.fieldType === 'checkbox') {
+  const selected = Array.isArray(values[field.fieldId]) ? values[field.fieldId] : [];
 
-        if (field.fieldType === 'checkbox') {
-          return (
-            <label key={field.fieldId} className="flex items-center gap-2 text-sm text-[var(--text-h)]">
-              <input
-                type="checkbox"
-                checked={values[field.fieldId] || false}
-                onChange={(e) => onChange(field.fieldId, e.target.checked)}
-              />
-              {field.label} {field.required && <span style={{ color: 'var(--accent)' }}>*</span>}
-            </label>
-          );
-        }
+  const toggleOption = (opt) => {
+    const updated = selected.includes(opt)
+      ? selected.filter((o) => o !== opt)
+      : [...selected, opt];
+    onChange(field.fieldId, updated);
+  };
 
+  // Agar Admin ne options nahi diye, toh simple single toggle jaisa fallback
+  if (!field.options || field.options.length === 0) {
+    return (
+      <label key={field.fieldId} className="flex items-center gap-2 text-sm text-[var(--text-h)]">
+        <input
+          type="checkbox"
+          checked={values[field.fieldId] || false}
+          onChange={(e) => onChange(field.fieldId, e.target.checked)}
+        />
+        {field.label} {field.required && <span style={{ color: 'var(--accent)' }}>*</span>}
+      </label>
+    );
+  }
+
+  return (
+    <div key={field.fieldId}>
+      <label className="block text-sm font-medium text-[var(--text-h)] mb-2">
+        {field.label} {field.required && <span style={{ color: 'var(--accent)' }}>*</span>}
+      </label>
+      <div className="flex flex-wrap gap-3">
+        {field.options.map((opt) => (
+          <label
+            key={opt}
+            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg cursor-pointer transition"
+            style={{
+              background: selected.includes(opt) ? 'var(--accent-bg)' : 'var(--code-bg)',
+              border: `1px solid ${selected.includes(opt) ? 'var(--accent-border)' : 'var(--border)'}`,
+              color: selected.includes(opt) ? 'var(--accent)' : 'var(--text-h)',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={selected.includes(opt)}
+              onChange={() => toggleOption(opt)}
+              className="hidden"
+            />
+            {opt}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
         if (field.fieldType === 'select') {
           return (
             <div key={field.fieldId}>
@@ -83,7 +122,7 @@ const DynamicFormRenderer = ({ fields, values, onChange, onFileChange }) => {
             </div>
           );
         }
-
+       
         // text, number, date
         return (
           <div key={field.fieldId}>
