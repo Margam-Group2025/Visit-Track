@@ -9,7 +9,10 @@ import { getTemplate } from '../api/formTemplateApi';
 import { createCase, getMyCases } from '../api/caseApi';
 import { getMyAssignedLeads } from '../api/leadApi';
 import { formatDateTime } from '../utils/formatDate';
-
+import CaseFilterBar from '../components/CaseFilterBar';
+import { filterCases } from '../utils/filterCases';
+import { exportCasesToPDF } from '../utils/exportPdf';
+import { exportSingleCasePDF } from '../utils/exportPdf';
 const StoDashboard = () => {
   const [tab, setTab] = useState('leads'); // 'leads' | 'new' | 'mycases'
 
@@ -94,7 +97,7 @@ const StoDashboard = () => {
   };
 
   const inputStyle = { background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text-h)' };
-
+  const [myFilters, setMyFilters] = useState({ status: '', from: '', to: '', search: '' });
   return (
     <DashboardLayout title="STO Portal" subtitle="Assigned leads and site visit reports" icon={ClipboardPlus}>
       <div className="flex gap-2 mb-5">
@@ -257,22 +260,31 @@ const StoDashboard = () => {
           </motion.div>
         )}
 
-        {tab === 'mycases' && (
-          <MyCasesList
-            cases={myCases}
-            expandedCase={expandedCase}
-            onToggle={(id) => setExpandedCase(expandedCase === id ? null : id)}
-            emptyText="You haven't submitted any cases yet."
-            renderContent={(c) => (
-              <EditableCaseData
-                caseId={c._id}
-                fields={template?.fields}
-                data={c.stoForm?.data}
-                onUpdated={fetchMyCases}
-              />
-            )}
-          />
-        )}
+       {tab === 'mycases' && (
+    <div>
+    <CaseFilterBar
+      filters={myFilters}
+      onChange={setMyFilters}
+      onExport={() => exportCasesToPDF(filterCases(myCases, myFilters), 'My STO Cases')}
+      resultCount={filterCases(myCases, myFilters).length}
+    />
+    <MyCasesList
+  cases={filterCases(myCases, myFilters)}
+  expandedCase={expandedCase}
+  onToggle={(id) => setExpandedCase(expandedCase === id ? null : id)}
+  emptyText="You haven't submitted any cases yet."
+  onDownload={(c) => exportSingleCasePDF(c, template?.fields, 'STO')}
+  renderContent={(c) => (
+    <EditableCaseData
+      caseId={c._id}
+      fields={template?.fields}
+      data={c.stoForm?.data}
+      onUpdated={fetchMyCases}
+    />
+  )}
+/>
+  </div>
+)}
       </AnimatePresence>
     </DashboardLayout>
   );

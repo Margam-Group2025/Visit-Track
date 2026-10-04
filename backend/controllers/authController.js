@@ -148,4 +148,45 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, getMe, getAllUsers, changePassword, forgotPassword, resetPassword };
+// PUT /api/auth/users/:id  (admin — user details edit kare)
+const updateUser = async (req, res) => {
+  try {
+    const { name, email, phone, role } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.name = name ?? user.name;
+    user.email = email ?? user.email;
+    user.phone = phone ?? user.phone;
+    user.role = role ?? user.role;
+    await user.save();
+
+    res.json({ _id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone, isActive: user.isActive });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// PUT /api/auth/users/:id/toggle-active  (admin — deactivate/reactivate)
+const toggleUserActive = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (user._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: 'You cannot deactivate your own account' });
+    }
+
+    user.isActive = !user.isActive;
+    await user.save();
+
+    res.json({ message: `User ${user.isActive ? 'activated' : 'deactivated'}`, isActive: user.isActive });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  registerUser, loginUser, getMe, getAllUsers, changePassword,
+  forgotPassword, resetPassword, updateUser, toggleUserActive,
+};

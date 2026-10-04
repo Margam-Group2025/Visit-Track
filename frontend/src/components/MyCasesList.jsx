@@ -1,7 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, MapPin } from 'lucide-react';
 import CaseTimeline from './CaseTimeline';
+import { formatDateTime } from '../utils/formatDate';
+import { Download } from 'lucide-react';
 
+  
 const statusColors = {
   sto_pending: { bg: '#f4f4f5', text: '#52525b' },
   technical_pending: { bg: '#fef3c7', text: '#b45309' },
@@ -12,7 +15,7 @@ const statusColors = {
   rejected: { bg: '#fee2e2', text: '#dc2626' },
 };
 
-const MyCasesList = ({ cases, expandedCase, onToggle, renderContent, emptyText }) => {
+const MyCasesList = ({ cases, expandedCase, onToggle, renderContent, emptyText,onDownload }) => {
   if (cases.length === 0) {
     return <p className="text-[var(--text-muted)] text-sm py-6 text-center">{emptyText}</p>;
   }
@@ -68,6 +71,16 @@ const MyCasesList = ({ cases, expandedCase, onToggle, renderContent, emptyText }
                   className="overflow-hidden"
                 >
                   <div className="px-4 pb-4 pt-1 space-y-4" style={{ borderTop: '1px solid var(--border)' }}>
+                   <div className="flex justify-end mb-2">
+             <button
+              onClick={() => onDownload?.(c)}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg"
+              style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}
+              >
+              <Download size={13} /> Download PDF Report
+             </button>
+             </div>
+
                     {renderContent(c)}
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--accent)' }}>

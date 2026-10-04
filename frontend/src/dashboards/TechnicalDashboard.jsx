@@ -6,11 +6,13 @@ import CaseCard from '../components/CaseCard';
 import DynamicFormRenderer from '../components/DynamicFormRenderer';
 import CaseDataDisplay from '../components/CaseDataDisplay';
 import EditableCaseData from '../components/EditableCaseData';
-import CaseTimeline from '../components/CaseTimeline';
 import MyCasesList from '../components/MyCasesList';
 import { markCaseViewed } from '../api/caseApi'; 
 import { getTemplate } from '../api/formTemplateApi';
 import { getTechnicalPendingCases, submitTechnicalReview, getMyCases } from '../api/caseApi';
+import CaseFilterBar from '../components/CaseFilterBar';
+import { filterCases } from '../utils/filterCases';
+import { exportCasesToPDF } from '../utils/exportPdf';
 
 const TechnicalDashboard = () => {
   const [tab, setTab] = useState('pending'); // 'pending' or 'mycases'
@@ -28,6 +30,7 @@ const TechnicalDashboard = () => {
   // My cases
   const [myCases, setMyCases] = useState([]);
   const [expandedCase, setExpandedCase] = useState(null);
+  const [myFilters, setMyFilters] = useState({ status: '', from: '', to: '', search: '' });
 
   const fetchCases = async () => setCases(await getTechnicalPendingCases());
   const fetchMyCases = async () => setMyCases(await getMyCases());
@@ -98,23 +101,28 @@ const TechnicalDashboard = () => {
       </div>
 
       {tab === 'mycases' ? (
-        <MyCasesList
-          cases={myCases}
-          expandedCase={expandedCase}
-          onToggle={(id) => setExpandedCase(expandedCase === id ? null : id)}
-          emptyText="You haven't reviewed any cases yet."
-          renderContent={(c) => (
-            <>
+        <div className="space-y-4">
+          <CaseFilterBar
+            filters={myFilters}
+            onChange={setMyFilters}
+            onExport={() => exportCasesToPDF(filterCases(myCases, myFilters), 'My Technical Reviews')}
+            resultCount={filterCases(myCases, myFilters).length}
+          />
+          <MyCasesList
+            cases={filterCases(myCases, myFilters)}
+            expandedCase={expandedCase}
+            onToggle={(id) => setExpandedCase(expandedCase === id ? null : id)}
+            emptyText="You haven't reviewed any cases yet."
+            renderContent={(c) => (
               <EditableCaseData
                 caseId={c._id}
                 fields={myTemplate?.fields}
                 data={c.technicalForm?.data}
                 onUpdated={fetchMyCases}
               />
-              {/* <CaseTimeline caseData={c} /> */}
-            </>
-          )}
-        />
+            )}
+          />
+        </div>
       ) : (
         <AnimatePresence mode="wait">
           {!selectedCase ? (
