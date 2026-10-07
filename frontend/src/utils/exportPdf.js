@@ -79,10 +79,10 @@ export const exportSingleCasePDF = (caseData, fields, department = 'STO') => {
     theme: 'grid',
     styles: { fontSize: 9, cellPadding: 3 },
     body: [
-      ['Case Number', caseData.caseNumber, 'Status', caseData.status?.replace(/_/g, ' ')],
-      ['Site Name', caseData.siteName, 'Site Address', caseData.siteAddress || '-'],
-      ['Submitted By', caseData.stoForm?.submittedBy?.name || '-', 'Submitted On', formatDateTime(caseData.stoForm?.submittedAt)],
-    ],
+  ['Case Number', caseData.caseNumber, 'Status', caseData.status?.replace(/_/g, ' ')],
+  ['Lead ID', caseData.leadCode || '-', 'Site Name', caseData.siteName],
+  ['Site Address', caseData.siteAddress || '-', '', ''],
+],
     columnStyles: {
       0: { fontStyle: 'bold', fillColor: [245, 245, 245], cellWidth: 35 },
       2: { fontStyle: 'bold', fillColor: [245, 245, 245], cellWidth: 35 },

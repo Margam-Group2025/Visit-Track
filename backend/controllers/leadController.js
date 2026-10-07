@@ -5,7 +5,12 @@ const sendEmail = require('../utils/sendEmail');
 const createLead = async (req, res) => {
   try {
     const { customerName, phone, email, location, notes } = req.body;
+
+    const count = await Lead.countDocuments();
+    const leadId = `LD-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+
     const lead = await Lead.create({
+      leadId,
       customerName, phone, email, location, notes,
       createdBy: req.user._id,
     });

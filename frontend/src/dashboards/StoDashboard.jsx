@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ClipboardPlus, CheckCircle2, AlertCircle, Loader2, Send, Upload, X, Paperclip, MapPin, Phone } from 'lucide-react';
+import { ClipboardPlus, CheckCircle2, AlertCircle, Loader2, Send, Upload, X, Paperclip, MapPin, Phone, Hash } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import DynamicFormRenderer from '../components/DynamicFormRenderer';
 import EditableCaseData from '../components/EditableCaseData';
@@ -13,6 +13,7 @@ import CaseFilterBar from '../components/CaseFilterBar';
 import { filterCases } from '../utils/filterCases';
 import { exportCasesToPDF } from '../utils/exportPdf';
 import { exportSingleCasePDF } from '../utils/exportPdf';
+
 const StoDashboard = () => {
   const [tab, setTab] = useState('leads'); // 'leads' | 'new' | 'mycases'
 
@@ -24,6 +25,8 @@ const StoDashboard = () => {
   const [template, setTemplate] = useState(null);
   const [siteName, setSiteName] = useState('');
   const [siteAddress, setSiteAddress] = useState('');
+  const [phone, setPhone] = useState(''); // Added phone state
+  const [leadIdDisplay, setLeadIdDisplay] = useState(''); // Added leadId display state
   const [values, setValues] = useState({});
   const [fileValues, setFileValues] = useState({});
   const [extraFiles, setExtraFiles] = useState([]);
@@ -49,8 +52,10 @@ const StoDashboard = () => {
 
   const openLeadForm = (lead) => {
     setActiveLead(lead);
-    setSiteName(lead.customerName);
-    setSiteAddress(lead.location);
+    setSiteName(lead.customerName || '');
+    setSiteAddress(lead.location || '');
+    setPhone(lead.phone || ''); // Autofill phone number
+    setLeadIdDisplay(lead.leadId || ''); // Autofill Lead ID (e.g., LD-BNB001)
     setValues({});
     setFileValues({});
     setExtraFiles([]);
@@ -63,6 +68,8 @@ const StoDashboard = () => {
   const resetForm = () => {
     setSiteName('');
     setSiteAddress('');
+    setPhone('');
+    setLeadIdDisplay('');
     setValues({});
     setFileValues({});
     setExtraFiles([]);
@@ -79,6 +86,7 @@ const StoDashboard = () => {
       const formData = new FormData();
       formData.append('siteName', siteName);
       formData.append('siteAddress', siteAddress);
+      formData.append('phone', phone);
       formData.append('data', JSON.stringify(values));
       if (activeLead) formData.append('leadId', activeLead._id);
 
@@ -98,6 +106,7 @@ const StoDashboard = () => {
 
   const inputStyle = { background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text-h)' };
   const [myFilters, setMyFilters] = useState({ status: '', from: '', to: '', search: '' });
+
   return (
     <DashboardLayout title="STO Portal" subtitle="Assigned leads and site visit reports" icon={ClipboardPlus}>
       <div className="flex gap-2 mb-5">
@@ -136,8 +145,7 @@ const StoDashboard = () => {
                     <p className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
                       <MapPin size={11} /> {lead.location}
                     </p>
-                    {lead.notes && <p className="text-xs text-[var(--text)] mt-1 italic">{lead.notes}</p>
-                    }
+                    {lead.notes && <p className="text-xs text-[var(--text)] mt-1 italic">{lead.notes}</p>}
                     <p className="text-xs text-[var(--text-muted)] mt-1">Assigned: {formatDateTime(lead.assignedAt)}</p>
                   </div>
                   <button
@@ -157,7 +165,7 @@ const StoDashboard = () => {
           <motion.div key="new" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-5">
             {activeLead && (
               <div className="text-sm rounded-lg px-3 py-2" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
-                Filling site visit for lead: <span className="font-medium">{activeLead.customerName}</span>
+                Filling site visit for lead: <span className="font-medium">{activeLead.customerName}</span> {leadIdDisplay && `(${leadIdDisplay})`}
               </div>
             )}
             {message && (
@@ -181,14 +189,34 @@ const StoDashboard = () => {
               <div className="space-y-4">
                 <h3 className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>Site Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Lead ID Field (Autofilled) */}
+                  {leadIdDisplay && (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-[var(--text-h)] mb-1.5">Lead ID</label>
+                      <input
+                        type="text"
+                        value={leadIdDisplay}
+                        readOnly
+                        className="w-full px-4 py-2.5 rounded-xl outline-none text-sm font-semibold opacity-80 cursor-not-allowed"
+                        style={inputStyle}
+                      />
+                    </div>
+                  )}
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-h)] mb-1.5">Name</label>
+                    <label className="block text-sm font-medium text-[var(--text-h)] mb-1.5">Customer Name</label>
                     <input
                       type="text" value={siteName} onChange={(e) => setSiteName(e.target.value)} required
                       className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={inputStyle}
                     />
                   </div>
                   <div>
+                    <label className="block text-sm font-medium text-[var(--text-h)] mb-1.5">Phone Number</label>
+                    <input
+                      type="text" value={phone} onChange={(e) => setPhone(e.target.value)} required
+                      className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={inputStyle}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-[var(--text-h)] mb-1.5">Site Address</label>
                     <input
                       type="text" value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)} required
@@ -260,31 +288,31 @@ const StoDashboard = () => {
           </motion.div>
         )}
 
-       {tab === 'mycases' && (
-    <div>
-    <CaseFilterBar
-      filters={myFilters}
-      onChange={setMyFilters}
-      onExport={() => exportCasesToPDF(filterCases(myCases, myFilters), 'My STO Cases')}
-      resultCount={filterCases(myCases, myFilters).length}
-    />
-    <MyCasesList
-  cases={filterCases(myCases, myFilters)}
-  expandedCase={expandedCase}
-  onToggle={(id) => setExpandedCase(expandedCase === id ? null : id)}
-  emptyText="You haven't submitted any cases yet."
-  onDownload={(c) => exportSingleCasePDF(c, template?.fields, 'STO')}
-  renderContent={(c) => (
-    <EditableCaseData
-      caseId={c._id}
-      fields={template?.fields}
-      data={c.stoForm?.data}
-      onUpdated={fetchMyCases}
-    />
-  )}
-/>
-  </div>
-)}
+        {tab === 'mycases' && (
+          <div>
+            <CaseFilterBar
+              filters={myFilters}
+              onChange={setMyFilters}
+              onExport={() => exportCasesToPDF(filterCases(myCases, myFilters), 'My STO Cases')}
+              resultCount={filterCases(myCases, myFilters).length}
+            />
+            <MyCasesList
+              cases={filterCases(myCases, myFilters)}
+              expandedCase={expandedCase}
+              onToggle={(id) => setExpandedCase(expandedCase === id ? null : id)}
+              emptyText="You haven't submitted any cases yet."
+              onDownload={(c) => exportSingleCasePDF(c, template?.fields, 'STO')}
+              renderContent={(c) => (
+                <EditableCaseData
+                  caseId={c._id}
+                  fields={template?.fields}
+                  data={c.stoForm?.data}
+                  onUpdated={fetchMyCases}
+                />
+              )}
+            />
+          </div>
+        )}
       </AnimatePresence>
     </DashboardLayout>
   );

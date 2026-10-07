@@ -14,25 +14,36 @@ const createCase = async (req, res) => {
     const files = (req.files || []).map((f) => ({ fileName: f.originalname, fileUrl: f.path }));
 
     const newCase = await Case.create({
-      caseNumber,
-      siteName,
-      siteAddress,
-      leadId: leadId || null,   
-      status: 'technical_pending',
-      stoForm: { submittedBy: req.user._id, data: parsedData, files, submittedAt: new Date() },
-      activityLog: [{
-        action: 'sto_submitted',
-        label: 'STO submitted site visit report',
-        by: req.user._id,
-        role: 'sto',
-        at: new Date(),
-      }],
-    });
-      
-    if (leadId) {
-      await Lead.findByIdAndUpdate(leadId, { status: 'visited', caseId: newCase._id, visitedAt: new Date() });
-    }
+  caseNumber,
+  siteName,
+  siteAddress,
+  leadId: leadId || null,
+  leadCode: null,
+  status: 'technical_pending',
 
+  stoForm: {
+    submittedBy: req.user._id,
+    data: parsedData,
+    files,
+    submittedAt: new Date(),
+  },
+
+  activityLog: [
+    {
+      action: 'sto_submitted',
+      by: req.user._id,
+      message: 'STO submitted a new site visit case',
+      timestamp: new Date(),
+    },
+  ],
+});
+if (leadId) {
+  const lead = await Lead.findByIdAndUpdate(leadId, { status: 'visited', caseId: newCase._id, visitedAt: new Date() }, { new: true });
+  if (lead) {
+    newCase.leadCode = lead.leadId;
+    await newCase.save();
+  }
+}
     // Notify Technical team (existing code)
     const technicalUsers = await User.find({ role: 'technical', isActive: true });
     technicalUsers.forEach((u) => {
