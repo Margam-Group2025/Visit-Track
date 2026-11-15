@@ -9,6 +9,9 @@ const roleLabels = {
   operation: 'Operation',
   admin: 'Admin',
   crm: 'CRM',
+  procurement: 'Procurement',
+  accountant: 'Accountant',
+  'Site Supervisor': 'Site Supervisor',
 };
 
 const DashboardLayout = ({ title, subtitle, icon: Icon, children }) => {

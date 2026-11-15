@@ -9,6 +9,9 @@ import AdminDashboard from './dashboards/AdminDashboard';
 import CrmDashboard from './dashboards/CrmDashboard';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import ProcurementDashboard from './dashboards/ProcurementDashboard';
+import AccountantDashboard from './dashboards/AccountantDashboard';
+import SiteSupervisorDashboard from './dashboards/SiteSupervisorDashboard'; 
 
 function App() {
   return (
@@ -24,6 +27,9 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="/procurement-dashboard" element={<ProtectedRoute allowedRole="procurement"><ProcurementDashboard /></ProtectedRoute>} />
+          <Route path="/accountant-dashboard" element={<ProtectedRoute allowedRole="accountant"><AccountantDashboard /></ProtectedRoute>} />
+          <Route path="/site-supervisor-dashboard" element={<ProtectedRoute allowedRole="Site Supervisor"><SiteSupervisorDashboard /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

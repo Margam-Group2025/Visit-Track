@@ -2,15 +2,14 @@ import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin, Link2, Users, ArrowLeft, Plus, UserCheck, Phone, Mail,
-  Loader2, Pencil, Save, X, RefreshCw, Search, CheckCircle2, Clock, 
-  History, Briefcase, FileText, Hash
+  Loader2, Pencil, Save, X, RefreshCw, Search, CheckCircle2, Clock,
+  History, Briefcase, FileText, Hash, IndianRupee
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import CaseTimeline from '../components/CaseTimeline';
 import { formatDateTime } from '../utils/formatDate';
-import { getCrmAssignedCases, markCaseViewed } from '../api/caseApi';
+import { getCrmAssignedCases, markCaseViewed, crmSubmitCompletion } from '../api/caseApi';
 import { createLead, getMyLeads, getStoUsers, assignLead, updateLead } from '../api/leadApi';
-
 const inputStyle = {
   background: 'var(--code-bg)',
   border: '1px solid var(--border)',
@@ -53,6 +52,10 @@ const CrmDashboard = () => {
   // Cases state
   const [cases, setCases] = useState([]);
   const [selectedCase, setSelectedCase] = useState(null);
+  const [amount, setAmount] = useState('');
+  const [completionRemarks, setCompletionRemarks] = useState('');
+  const [completionLoading, setCompletionLoading] = useState(false);
+  const [completionMessage, setCompletionMessage] = useState('');
 
   const fetchLeads = async () => {
     try {
@@ -109,6 +112,26 @@ const CrmDashboard = () => {
       setLeadMessage(err.response?.data?.message || 'Failed to add lead');
     } finally {
       setLeadLoading(false);
+    }
+  };
+
+  const handleSubmitCompletion = async (e) => {
+    e.preventDefault();
+    setCompletionLoading(true);
+    setCompletionMessage('');
+    try {
+      await crmSubmitCompletion(selectedCase._id, {
+        amountReceived: amount,
+        remarks: completionRemarks,
+      });
+      setAmount('');
+      setCompletionRemarks('');
+      setSelectedCase(null);
+      getCrmAssignedCases().then(setCases);
+    } catch (err) {
+      setCompletionMessage(err.response?.data?.message || 'Failed to submit');
+    } finally {
+      setCompletionLoading(false);
     }
   };
 
@@ -184,7 +207,7 @@ const CrmDashboard = () => {
           style={{ background: 'var(--accent)' }}
         >
           {assigningId === lead._id ? <Loader2 size={13} className="animate-spin" /> : <UserCheck size={13} />}
-          {isReassign ? 'Confirm' : 'Assign'}
+          {isReassign ? 'Reassign' : 'Assign'}
         </button>
         {isReassign && (
           <button
@@ -473,45 +496,40 @@ const CrmDashboard = () => {
                   </div>
 
                   {/* Footer Assignment Handler */}
-                  <div className="mt-4 pt-3 border-t border-[var(--border)] flex flex-col gap-2">
+                  <div
+                    className="mt-3 pt-3 space-y-2"
+                    style={{ borderTop: '1px solid var(--border)' }}
+                  >
                     {lead.status === 'unassigned' && renderAssigner(lead, false)}
 
-                    {lead.status === 'assigned' && (
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        {reassigningId === lead._id ? (
-                          renderAssigner(lead, true)
-                        ) : (
-                          <>
-                            <p className="text-xs text-[var(--text-muted)]">
-                              Assigned to:{' '}
-                              <span className="font-semibold text-[var(--text-h)]">
-                                {lead.assignedTo?.name || 'Unknown'}
-                              </span>
-                            </p>
-                            <button
-                              onClick={() => setReassigningId(lead._id)}
-                              className="flex items-center gap-1 text-xs font-semibold"
-                              style={{ color: 'var(--accent)' }}
-                            >
-                              <RefreshCw size={12} /> Reassign STO
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
+                    {lead.status === 'assigned' &&
+                      (reassigningId === lead._id ? (
+                        renderAssigner(lead, true)
+                      ) : (
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <p className="text-xs text-[var(--text-muted)]">
+                            Assigned to{' '}
+                            <span className="font-medium text-[var(--text-h)]">
+                              {lead.assignedTo?.name}
+                            </span>
+                          </p>
+                          <button
+                            onClick={() => setReassigningId(lead._id)}
+                            className="flex items-center gap-1 text-xs font-medium"
+                            style={{ color: 'var(--accent)' }}
+                          >
+                            <RefreshCw size={12} /> Change STO
+                          </button>
+                        </div>
+                      ))}
 
                     {lead.status === 'visited' && (
-                      <div className="flex items-center justify-between text-xs text-[var(--text-muted)] flex-wrap gap-2">
-                        <p className="flex items-center gap-1">
-                          <CheckCircle2 size={13} className="text-emerald-600" />
-                          Visited by <span className="font-semibold text-[var(--text-h)]">{lead.assignedTo?.name}</span>
-                          {lead.caseId && (
-                            <span className="ml-1 font-mono text-[var(--accent)]">
-                              (Case: {lead.caseId.caseNumber})
-                            </span>
-                          )}
-                        </p>
-                      </div>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Visited by{' '}
+                        <span className="font-medium text-[var(--text-h)]">
+                          {lead.assignedTo?.name}
+                        </span>
+                      </p>
                     )}
 
                     {/* Assignment History Toggle */}
@@ -641,6 +659,58 @@ const CrmDashboard = () => {
                   <p className="text-[var(--text)]">{selectedCase.crmAssignment.notes}</p>
                 </div>
               )}
+
+              {selectedCase.status === 'crm_assigned' ? (
+                <form
+                  onSubmit={handleSubmitCompletion}
+                  className="rounded-xl p-4 mb-6 space-y-3"
+                  style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}
+                >
+                  <p className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>
+                    Work complete? Submit customer payment
+                  </p>
+                  {completionMessage && <p className="text-sm text-red-600">{completionMessage}</p>}
+                  <div className="relative">
+                    <IndianRupee size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      required
+                      placeholder="Amount received from customer"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl outline-none text-sm"
+                      style={inputStyle}
+                    />
+                  </div>
+                  <textarea
+                    rows={2}
+                    placeholder="Remarks (optional)"
+                    value={completionRemarks}
+                    onChange={(e) => setCompletionRemarks(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl outline-none text-sm resize-none"
+                    style={inputStyle}
+                  />
+                  <button
+                    type="submit"
+                    disabled={completionLoading}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-white disabled:opacity-50"
+                    style={{ background: 'var(--accent)' }}
+                  >
+                    {completionLoading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                    Submit to Accounts
+                  </button>
+                </form>
+              ) : selectedCase.crmCompletion?.submittedAt ? (
+                <div
+                  className="rounded-xl p-4 mb-6 text-sm"
+                  style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d' }}
+                >
+                  Amount ₹{Number(selectedCase.crmCompletion.amountReceived).toLocaleString('en-IN')} submitted to Accounts on{' '}
+                  {formatDateTime(selectedCase.crmCompletion.submittedAt)}
+                </div>
+              ) : null}
 
               <div className="pt-4 border-t border-[var(--border)]">
                 <p className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--accent)' }}>

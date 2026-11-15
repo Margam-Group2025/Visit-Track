@@ -10,6 +10,9 @@ const statusLabels = {
   crm_assigned: 'CRM Assigned',
   completed: 'Completed',
   rejected: 'Rejected',
+  accounts_pending: 'Accounts Pending',
+  invoiced: 'Invoiced',
+
 };
 
 const statusColors = {
@@ -20,6 +23,8 @@ const statusColors = {
   crm_assigned: { bg: '#dcfce7', text: '#15803d' },
   completed: { bg: '#dcfce7', text: '#15803d' },
   rejected: { bg: '#fee2e2', text: '#dc2626' },
+  accounts_pending: { bg: '#e0f2fe', text: '#0369a1' },
+  invoiced: { bg: '#ede9fe', text: '#6d28d9' },
 };
 
 const CaseCard = ({ c, onClick, index = 0 }) => {

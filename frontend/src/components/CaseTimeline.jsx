@@ -7,26 +7,29 @@ const stages = [
   { key: 'operationForm', label: 'Operation Report' },
   { key: 'adminApproval', label: 'Admin Approval' },
   { key: 'crmAssignment', label: 'CRM Assigned' },
+  { key: 'crmCompletion', label: 'CRM Completed & Amount Submitted' },
+  { key: 'accountsInvoice', label: 'Invoice Uploaded' },
 ];
+
 
 const CaseTimeline = ({ caseData }) => {
   const isRejected = caseData.status === 'rejected';
   const isCompleted = caseData.status === 'completed';
   const log = [...(caseData.activityLog || [])].sort((a, b) => new Date(a.at) - new Date(b.at));
-
+  
   const iconFor = (action) => {
     if (action.endsWith('_viewed')) return <Eye size={13} className="text-[var(--text-muted)]" />;
     if (action === 'edited') return <Pencil size={13} style={{ color: '#b45309' }} />;
     return <CheckCircle2 size={13} style={{ color: 'var(--accent)' }} />;
   };
-
+  
   return (
     <div className="space-y-6">
       {/* Stage progress */}
       <div>
         {stages.map((stage, i) => {
           const data = caseData[stage.key];
-          const timestamp = data?.submittedAt || data?.approvedAt || data?.assignedAt;
+          const timestamp = data?.submittedAt || data?.approvedAt || data?.assignedAt || data?.uploadedAt;
           const done = Boolean(timestamp);
           const isLast = i === stages.length - 1;
 

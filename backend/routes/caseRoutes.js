@@ -17,6 +17,11 @@ const {
   markCaseCompleted,
   updateMyStageData,
   markCaseViewed,
+  getTechnicalUsers,
+  crmSubmitCompletion,
+  getAccountsPendingCases,
+  uploadInvoice,
+  reassignTechnical,
 } = require('../controllers/caseController');
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 const upload = require('../middleware/upload');
@@ -30,8 +35,9 @@ router.get('/admin-pending', verifyToken, checkRole('admin'), getAdminPendingCas
 router.get('/crm-assigned', verifyToken, checkRole('crm'), getCrmAssignedCases);
 router.get('/all', verifyToken, checkRole('admin'), getAllCasesForAdmin);
 router.get('/crm-users', verifyToken, checkRole('admin'), getCrmUsers);
+router.get('/technical-users', verifyToken, checkRole('sto'), getTechnicalUsers);
+router.get('/accounts-pending', verifyToken, checkRole('accountant'), getAccountsPendingCases);
 router.get('/:id', verifyToken, getCaseById);
-
 router.put(
   '/:id/technical-review',
   verifyToken,
@@ -53,5 +59,8 @@ router.put('/:id/admin-approve', verifyToken, checkRole('admin'), adminApproveAn
 router.put('/:id/complete', verifyToken, checkRole('admin'), markCaseCompleted);
 router.put('/:id/edit-my-data', verifyToken, updateMyStageData);
 router.put('/:id/mark-viewed', verifyToken, markCaseViewed);
-
+router.put('/:id/crm-complete', verifyToken, checkRole('crm'), crmSubmitCompletion);
+router.get('/accounts-pending', verifyToken, checkRole('accountant'), getAccountsPendingCases);
+router.post('/:id/upload-invoice', verifyToken, checkRole('accountant'), upload.single('invoiceFile'), uploadInvoice);
+router.put('/:id/reassign-technical', verifyToken, checkRole('sto'), reassignTechnical);
 module.exports = router;

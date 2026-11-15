@@ -9,6 +9,8 @@ const statusOptions = [
   { value: 'crm_assigned', label: 'CRM Assigned' },
   { value: 'completed', label: 'Completed' },
   { value: 'rejected', label: 'Rejected' },
+  { value: 'accounts_pending', label: 'Accounts Pending' },
+{ value: 'invoiced', label: 'Invoiced' },
 ];
 
 const inputStyle = { background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text-h)' };

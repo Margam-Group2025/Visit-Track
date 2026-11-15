@@ -13,6 +13,7 @@ import { getTechnicalPendingCases, submitTechnicalReview, getMyCases } from '../
 import CaseFilterBar from '../components/CaseFilterBar';
 import { filterCases } from '../utils/filterCases';
 import { exportCasesToPDF } from '../utils/exportPdf';
+import LeadInfoCard from '../components/LeadInfoCard';
 
 const TechnicalDashboard = () => {
   const [tab, setTab] = useState('pending'); // 'pending' or 'mycases'
@@ -113,14 +114,19 @@ const TechnicalDashboard = () => {
             expandedCase={expandedCase}
             onToggle={(id) => setExpandedCase(expandedCase === id ? null : id)}
             emptyText="You haven't reviewed any cases yet."
+          
             renderContent={(c) => (
-              <EditableCaseData
-                caseId={c._id}
-                fields={myTemplate?.fields}
+           <>
+              {c.leadId && <LeadInfoCard lead={c.leadId} />}
+
+            <EditableCaseData
+               caseId={c._id}
+               fields={myTemplate?.fields}
                 data={c.technicalForm?.data}
-                onUpdated={fetchMyCases}
-              />
-            )}
+               onUpdated={fetchMyCases}
+             />
+          </>
+        )}
           />
         </div>
       ) : (
@@ -155,6 +161,11 @@ const TechnicalDashboard = () => {
               <p className="font-mono text-sm text-[var(--text-muted)] mb-5">{selectedCase.caseNumber}</p>
 
               <div className="rounded-xl p-4 mb-6" style={{ background: 'var(--code-bg)', border: '1px solid var(--border)' }}>
+                {selectedCase.leadId && (
+                 <div className="mb-4">
+                   <LeadInfoCard lead={selectedCase.leadId} />
+                 </div>
+                 )}
                 <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--accent)' }}>STO Report</p>
                 <CaseDataDisplay fields={stoTemplate?.fields} data={selectedCase.stoForm?.data} />
                 {selectedCase.stoForm?.files?.length > 0 && (

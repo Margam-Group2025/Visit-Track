@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ClipboardPlus, CheckCircle2, AlertCircle, Loader2, Send, Upload, X, Paperclip, MapPin, Phone, Hash } from 'lucide-react';
+import { ClipboardPlus, CheckCircle2, AlertCircle, Loader2, Send, Upload, X, Paperclip, MapPin, Phone } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import DynamicFormRenderer from '../components/DynamicFormRenderer';
 import EditableCaseData from '../components/EditableCaseData';
@@ -13,7 +13,9 @@ import CaseFilterBar from '../components/CaseFilterBar';
 import { filterCases } from '../utils/filterCases';
 import { exportCasesToPDF } from '../utils/exportPdf';
 import { exportSingleCasePDF } from '../utils/exportPdf';
-
+import {  getTechnicalUsers } from '../api/caseApi';
+import LeadInfoCard from '../components/LeadInfoCard';
+import TechnicalAssignment from '../components/TechnicalAssignment';
 const StoDashboard = () => {
   const [tab, setTab] = useState('leads'); // 'leads' | 'new' | 'mycases'
 
@@ -33,23 +35,34 @@ const StoDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-
+  const [technicalUsers, setTechnicalUsers] = useState([]);
+  const [assignedTechnical, setAssignedTechnical] = useState('');
   // My cases
   const [myCases, setMyCases] = useState([]);
   const [expandedCase, setExpandedCase] = useState(null);
-
   const fetchLeads = async () => setLeads(await getMyAssignedLeads());
   const fetchMyCases = async () => setMyCases(await getMyCases());
 
-  useEffect(() => {
-    getTemplate('sto').then(setTemplate);
-    fetchLeads();
-  }, []);
+ useEffect(() => {
+  getTemplate('sto')
+    .then(setTemplate)
+    .catch((err) => {
+      console.error('Template load failed:', err);
+      setTemplate({ fields: [] });
+    });
+
+  getTechnicalUsers()
+    .then((data) => setTechnicalUsers(Array.isArray(data) ? data : []))
+    .catch(() => setTechnicalUsers([]));
+
+  fetchLeads();
+}, []);
 
   useEffect(() => {
     if (tab === 'mycases') fetchMyCases();
   }, [tab]);
 
+ 
   const openLeadForm = (lead) => {
     setActiveLead(lead);
     setSiteName(lead.customerName || '');
@@ -74,6 +87,7 @@ const StoDashboard = () => {
     setFileValues({});
     setExtraFiles([]);
     setActiveLead(null);
+    setAssignedTechnical('')
   };
 
   const handleSubmit = async (e) => {
@@ -86,6 +100,7 @@ const StoDashboard = () => {
       const formData = new FormData();
       formData.append('siteName', siteName);
       formData.append('siteAddress', siteAddress);
+      formData.append('assignedTechnical', assignedTechnical);
       formData.append('phone', phone);
       formData.append('data', JSON.stringify(values));
       if (activeLead) formData.append('leadId', activeLead._id);
@@ -106,7 +121,12 @@ const StoDashboard = () => {
 
   const inputStyle = { background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text-h)' };
   const [myFilters, setMyFilters] = useState({ status: '', from: '', to: '', search: '' });
-
+  const handleLeadUpdated = (updated) => {
+  setActiveLead(updated);
+  setSiteName(updated.customerName);
+  setSiteAddress(updated.location);
+  fetchLeads();
+};
   return (
     <DashboardLayout title="STO Portal" subtitle="Assigned leads and site visit reports" icon={ClipboardPlus}>
       <div className="flex gap-2 mb-5">
@@ -164,10 +184,8 @@ const StoDashboard = () => {
         {tab === 'new' && (
           <motion.div key="new" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-5">
             {activeLead && (
-              <div className="text-sm rounded-lg px-3 py-2" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
-                Filling site visit for lead: <span className="font-medium">{activeLead.customerName}</span> {leadIdDisplay && `(${leadIdDisplay})`}
-              </div>
-            )}
+            <LeadInfoCard lead={activeLead} editable onUpdated={handleLeadUpdated} />
+             )}
             {message && (
               <div className="p-4 rounded-xl flex items-center gap-3 text-sm" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d' }}>
                 <CheckCircle2 size={18} className="shrink-0" />
@@ -223,6 +241,23 @@ const StoDashboard = () => {
                       className="w-full px-4 py-2.5 rounded-xl outline-none text-sm" style={inputStyle}
                     />
                   </div>
+                  <div className="md:col-span-2">
+  <label className="block text-sm font-medium text-[var(--text-h)] mb-1.5">
+    Assign to Technical Team Member <span style={{ color: 'var(--accent)' }}>*</span>
+  </label>
+  <select
+    required
+    value={assignedTechnical}
+    onChange={(e) => setAssignedTechnical(e.target.value)}
+    className="w-full px-4 py-2.5 rounded-xl outline-none text-sm"
+    style={inputStyle}
+  >
+    <option value="">Select technical member</option>
+    {(technicalUsers || []).map((u) => (
+  <option key={u._id} value={u._id}>{u.name} ({u.email})</option>
+))}
+  </select>
+</div>
                 </div>
               </div>
 
@@ -302,14 +337,26 @@ const StoDashboard = () => {
               onToggle={(id) => setExpandedCase(expandedCase === id ? null : id)}
               emptyText="You haven't submitted any cases yet."
               onDownload={(c) => exportSingleCasePDF(c, template?.fields, 'STO')}
-              renderContent={(c) => (
-                <EditableCaseData
-                  caseId={c._id}
-                  fields={template?.fields}
-                  data={c.stoForm?.data}
-                  onUpdated={fetchMyCases}
-                />
-              )}
+             renderContent={(c) => (
+               <div className="space-y-4">
+                 <div className="text-xs text-[var(--text-muted)] space-y-0.5">
+               <p>
+                  Submitted by <span className="font-medium text-[var(--text-h)]">{c.stoForm?.submittedBy?.name || 'STO'}</span>
+                {' '}on {formatDateTime(c.stoForm?.submittedAt)}
+                </p>
+                {c.leadCode && <p>Lead ID: <span className="font-mono">{c.leadCode}</span></p>}
+              </div>
+
+            <TechnicalAssignment caseData={c} technicalUsers={technicalUsers} onChanged={fetchMyCases} />
+
+           <EditableCaseData
+            caseId={c._id}
+            fields={template?.fields}
+           data={c.stoForm?.data}
+          onUpdated={fetchMyCases}
+         />
+           </div>
+         )}
             />
           </div>
         )}

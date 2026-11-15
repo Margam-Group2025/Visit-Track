@@ -80,6 +80,11 @@ const MyCasesList = ({ cases, expandedCase, onToggle, renderContent, emptyText,o
               <Download size={13} /> Download PDF Report
              </button>
              </div>
+          {c.assignedTechnical?.name && (
+           <p className="text-xs text-[var(--text-muted)]">
+              Assigned Technical: <span className="font-medium text-[var(--text-h)]">{c.assignedTechnical.name}</span>
+          </p>
+          )}
 
                     {renderContent(c)}
                     <div>

@@ -79,3 +79,27 @@ export const markCaseViewed = async (id) => {
   const { data } = await api.put(`/cases/${id}/mark-viewed`);
   return data;
 };
+export const getTechnicalUsers = async () => {
+  const { data } = await api.get('/cases/technical-users');
+  return data;
+};
+export const crmSubmitCompletion = async (id, payload) => {
+  const { data } = await api.put(`/cases/${id}/crm-complete`, payload);
+  return data;
+};
+
+export const getAccountsPendingCases = async () => {
+  const { data } = await api.get('/cases/accounts-pending');
+  return data;
+};
+
+export const uploadInvoice = async (id, formData) => {
+  const { data } = await api.put(`/cases/${id}/upload-invoice`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+};
+export const reassignTechnical = async (id, assignedTechnical) => {
+  const { data } = await api.put(`/cases/${id}/reassign-technical`, { assignedTechnical });
+  return data;
+};

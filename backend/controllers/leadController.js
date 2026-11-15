@@ -1,26 +1,31 @@
 const Lead = require('../models/lead');
 const User = require('../models/user');
 const sendEmail = require('../utils/sendEmail');
-// POST /api/leads  (CRM naya lead banata hai)
+// const { notifyRole, notifyUser } = require('../utils/notify');
+// POST /api/leads (CRM naya lead banata hai)
 const createLead = async (req, res) => {
   try {
     const { customerName, phone, email, location, notes } = req.body;
 
-    const count = await Lead.countDocuments();
-    const leadId = `LD-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
-
-    const lead = await Lead.create({
-      leadId,
-      customerName, phone, email, location, notes,
+    // leadId yahan pass karne ki zaroorat nahi hai.
+    // Schema ka pre-save hook apne aap sequence ke hisab se LD-BNB001, LD-BNB002... set kar dega.
+    const lead = new Lead({
+      customerName,
+      phone,
+      email,
+      location,
+      notes,
       createdBy: req.user._id,
     });
+
+    await lead.save();
     res.status(201).json(lead);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// GET /api/leads  (CRM apne banaye leads dekhe)
+// GET /api/leads (CRM apne banaye leads dekhe)
 const getMyLeads = async (req, res) => {
   try {
     const leads = await Lead.find({ createdBy: req.user._id })
@@ -34,7 +39,7 @@ const getMyLeads = async (req, res) => {
   }
 };
 
-// GET /api/leads/all  (Admin — sab leads dekhe)
+// GET /api/leads/all (Admin — sab leads dekhe)
 const getAllLeads = async (req, res) => {
   try {
     const leads = await Lead.find()
@@ -48,7 +53,7 @@ const getAllLeads = async (req, res) => {
   }
 };
 
-// GET /api/leads/sto-users  (CRM ke liye — assign karne ke liye STO list)
+// GET /api/leads/sto-users (CRM ke liye — assign karne ke liye STO list)
 const getStoUsers = async (req, res) => {
   try {
     const stoUsers = await User.find({ role: 'sto', isActive: true }).select('name email');
@@ -58,7 +63,7 @@ const getStoUsers = async (req, res) => {
   }
 };
 
-// PUT /api/leads/:id/assign  (assign ya reassign)
+// PUT /api/leads/:id/assign (assign ya reassign)
 const assignLead = async (req, res) => {
   try {
     const { assignedTo } = req.body;
@@ -82,11 +87,16 @@ const assignLead = async (req, res) => {
     lead.viewedAt = null; // naye STO ka "seen" fresh track hoga
     await lead.save();
 
-    sendEmail(
-      sto.email,
-      'New Lead Assigned for Site Visit',
-      `A new lead has been assigned to you.\n\nCustomer: ${lead.customerName}\nPhone: ${lead.phone}\nLocation: ${lead.location}`
-    );
+    // Safely send email
+    try {
+      await sendEmail(
+        sto.email,
+        'New Lead Assigned for Site Visit',
+        `A new lead (${lead.leadId}) has been assigned to you.\n\nCustomer: ${lead.customerName}\nPhone: ${lead.phone}\nLocation: ${lead.location}`
+      );
+    } catch (emailError) {
+      console.error('Failed to send assignment email:', emailError.message);
+    }
 
     res.json(lead);
   } catch (error) {
@@ -94,7 +104,7 @@ const assignLead = async (req, res) => {
   }
 };
 
-// GET /api/leads/assigned-to-me  (STO )
+// GET /api/leads/assigned-to-me (STO)
 const getMyAssignedLeads = async (req, res) => {
   try {
     await Lead.updateMany(
@@ -102,15 +112,18 @@ const getMyAssignedLeads = async (req, res) => {
       { viewedAt: new Date() }
     );
 
-    const leads = await Lead.find({ assignedTo: req.user._id, status: 'assigned' })
-      .sort({ assignedAt: -1 });
+const leads = await Lead.find({ assignedTo: req.user._id, status: 'assigned' })
+  .populate('createdBy', 'name')
+  .populate('assignmentHistory.sto', 'name')
+  .populate('editHistory.by', 'name')
+  .sort({ assignedAt: -1 });
     res.json(leads);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// PUT /api/leads/:id  (CRM apne lead ki details edit kare)
+// PUT /api/leads/:id (CRM apne lead ki details edit kare)
 const updateLead = async (req, res) => {
   try {
     const { customerName, phone, email, location, notes } = req.body;
@@ -133,7 +146,56 @@ const updateLead = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// PUT /api/leads/:id/sto-update
+const updateLeadBySto = async (req, res) => {
+  try {
+    const { customerName, phone, email, location } = req.body;
+    const lead = await Lead.findById(req.params.id);
+    if (!lead) return res.status(404).json({ message: 'Lead not found' });
 
-module.exports = {
-  createLead, getMyLeads, getAllLeads, getStoUsers, assignLead, getMyAssignedLeads, updateLead
+    if (!lead.assignedTo || lead.assignedTo.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'This lead is not assigned to you' });
+    }
+    if (lead.status === 'visited') {
+      return res.status(400).json({ message: 'Visit already submitted, details are locked' });
+    }
+
+    const incoming = { customerName, phone, email, location };
+    const changes = [];
+    Object.entries(incoming).forEach(([key, value]) => {
+      if (value !== undefined && String(value) !== String(lead[key] ?? '')) {
+        changes.push(`${key}: "${lead[key] ?? ''}" → "${value}"`);
+        lead[key] = value;
+      }
+    });
+
+    if (changes.length > 0) {
+      lead.editHistory.push({
+        by: req.user._id,
+        role: req.user.role,
+        changes: changes.join('; '),
+        at: new Date(),
+      });
+      await lead.save();
+    }
+
+    const populated = await Lead.findById(lead._id)
+      .populate('createdBy', 'name')
+      .populate('assignmentHistory.sto', 'name')
+      .populate('editHistory.by', 'name');
+    res.json(populated);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
+module.exports = {
+  createLead,
+  getMyLeads,
+  getAllLeads,
+  getStoUsers,
+  assignLead,
+  getMyAssignedLeads,
+  updateLead,
+  updateLeadBySto,
+};
+ 

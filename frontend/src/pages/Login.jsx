@@ -11,6 +11,9 @@ const roleRoutes = {
   operation: '/operation-dashboard',
   admin: '/admin-dashboard',
   crm: '/crm-dashboard',
+  procurement: '/procurement-dashboard',
+  accountant: '/accountant-dashboard',
+  'Site Supervisor': '/site-supervisor-dashboard',
 };
 
 const Login = () => {

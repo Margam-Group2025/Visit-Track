@@ -4,6 +4,7 @@ import CaseTimeline from '../components/CaseTimeline';
 import CaseFilterBar from '../components/CaseFilterBar';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { filterCases } from '../utils/filterCases';
+import { formatDateTime } from '../utils/formatDate';
 import { exportCasesToPDF } from '../utils/exportPdf';
 import {
   UserPlus,
@@ -147,7 +148,7 @@ const AdminDashboard = () => {
       fetchCaseData();
     } catch (err) {
       setMessage(err.response?.data?.message || 'Something went wrong');
-    } borderFinally: {
+    } finally {
       setLoading(false);
     }
   };
@@ -331,6 +332,9 @@ const AdminDashboard = () => {
                       <option value="operation">Operation</option>
                       <option value="crm">CRM</option>
                       <option value="admin">Admin</option>
+                      <option value="procurement">Procurement</option>
+                      <option value="accountant">Accountant</option>
+                      <option value="Site Supervisor">Site Supervisor</option>
                     </select>
                   </div>
                 </div>
@@ -636,6 +640,37 @@ const AdminDashboard = () => {
                   )}
                 </div>
 
+                {(selectedCase.crmCompletion?.submittedAt || selectedCase.accountsInvoice?.uploadedAt) && (
+                  <div
+                    className="rounded-xl p-4 mb-4 space-y-1.5"
+                    style={{ background: 'var(--code-bg)', border: '1px solid var(--border)' }}
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>
+                      Payment & Invoice
+                    </p>
+                    {selectedCase.crmCompletion?.submittedAt && (
+                      <p className="text-sm text-[var(--text)]">
+                        Amount received:{' '}
+                        <span className="font-medium text-[var(--text-h)]">
+                          ₹{Number(selectedCase.crmCompletion.amountReceived).toLocaleString('en-IN')}
+                        </span>
+                        {' '}(by {selectedCase.crmCompletion.submittedBy?.name || 'CRM'}, {formatDateTime(selectedCase.crmCompletion.submittedAt)})
+                      </p>
+                    )}
+                    {selectedCase.accountsInvoice?.invoiceFile?.fileUrl && (
+                      <a
+                        href={selectedCase.accountsInvoice.invoiceFile.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm hover:underline"
+                        style={{ color: 'var(--accent)' }}
+                      >
+                        <Link2 size={14} /> View Invoice {selectedCase.accountsInvoice.invoiceNumber || ''}
+                      </a>
+                    )}
+                  </div>
+                )}
+
                 <div className="mb-6 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
                   <p className="text-xs font-semibold uppercase tracking-wide mb-4" style={{ color: 'var(--accent)' }}>Case Timeline</p>
                   <CaseTimeline caseData={selectedCase} />
@@ -700,6 +735,50 @@ const AdminDashboard = () => {
                       Approve & Assign to CRM
                     </button>
                   </form>
+                )}
+
+                {['crm_assigned', 'accounts_pending', 'invoiced'].includes(selectedCase.status) && (
+                  <div
+                    className="space-y-4"
+                    style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}
+                  >
+                    {selectedCase.crmAssignment?.assignedTo && (
+                      <div
+                        className="rounded-xl p-4 flex items-center gap-2 text-sm"
+                        style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}
+                      >
+                        <UserCheck size={16} /> Assigned to {selectedCase.crmAssignment.assignedTo.name}
+                      </div>
+                    )}
+
+                    {selectedCase.status === 'invoiced' ? (
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleMarkCompleted}
+                        disabled={loading}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium text-white transition disabled:opacity-50"
+                        style={{ background: '#15803d' }}
+                      >
+                        {loading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
+                        {loading ? 'Processing...' : 'Mark as Completed'}
+                      </motion.button>
+                    ) : (
+                      <p className="text-xs text-[var(--text-muted)]">
+                        {selectedCase.status === 'crm_assigned'
+                          ? 'Waiting for CRM to complete the work.'
+                          : 'Waiting for Accounts to upload the invoice.'}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {selectedCase.status === 'completed' && (
+                  <div
+                    className="rounded-xl p-4 text-sm flex items-center gap-2"
+                    style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d' }}
+                  >
+                    <CheckCircle2 size={16} /> Case completed successfully.
+                  </div>
                 )}
               </motion.div>
             )}

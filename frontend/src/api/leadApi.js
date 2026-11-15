@@ -33,3 +33,7 @@ export const updateLead = async (id, payload) => {
   const { data } = await api.put(`/leads/${id}`, payload);
   return data;
 };
+export const updateLeadBySto = async (id, payload) => {
+  const { data } = await api.put(`/leads/${id}/sto-update`, payload);
+  return data;
+};

@@ -11,6 +11,7 @@ import MyCasesList from '../components/MyCasesList';
 import { markCaseViewed } from '../api/caseApi';
 import { getTemplate } from '../api/formTemplateApi';
 import { getOperationPendingCases, submitOperationReview, getMyCases } from '../api/caseApi';
+import LeadInfoCard from '../components/LeadInfoCard';
 
 const OperationDashboard = () => {
   const [tab, setTab] = useState('pending'); // 'pending' or 'mycases'
@@ -113,6 +114,7 @@ const OperationDashboard = () => {
           emptyText="You haven't submitted any final reports yet."
           renderContent={(c) => (
             <>
+            {c.leadId && <LeadInfoCard lead={c.leadId} />}
               {c.operationForm?.quotationFile?.fileUrl && (
                 <a
                   href={c.operationForm.quotationFile.fileUrl}
@@ -164,7 +166,11 @@ const OperationDashboard = () => {
 
               <h2 className="font-heading text-lg sm:text-xl text-[var(--text-h)]">{selectedCase.siteName}</h2>
               <p className="font-mono text-sm text-[var(--text-muted)] mb-5">{selectedCase.caseNumber}</p>
-
+               {selectedCase.leadId && (
+                  <div className="mb-4">
+                 <LeadInfoCard lead={selectedCase.leadId} />
+                 </div>
+                )}
               <div className="rounded-xl p-4 mb-3" style={{ background: 'var(--code-bg)', border: '1px solid var(--border)' }}>
                 <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--accent)' }}>STO Report</p>
                 <CaseDataDisplay fields={stoTemplate?.fields} data={selectedCase.stoForm?.data} />

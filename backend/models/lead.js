@@ -17,6 +17,12 @@ const leadSchema = new mongoose.Schema({
     assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     at: { type: Date, default: Date.now },
   }],
+  editHistory: [{
+  by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  role: String,
+  changes: String,
+  at: { type: Date, default: Date.now },
+}],
   status: {
     type: String,
     enum: ['unassigned', 'assigned', 'visited'],
