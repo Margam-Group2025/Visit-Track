@@ -4,7 +4,18 @@ import { Plus, Trash2, Save, Settings2 } from 'lucide-react';
 import { getTemplate, upsertTemplate } from '../api/formTemplateApi';
 
 const fieldTypes = ['text', 'number', 'textarea', 'date', 'select', 'checkbox', 'file'];
-const inputStyle = { background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text-h)' };
+const inputStyle = {
+  background: 'var(--code-bg)',
+  border: '1px solid var(--border)',
+  color: 'var(--text-h)',
+};
+
+const departments = [
+  { key: 'sto', label: 'STO Form' },
+  { key: 'technical', label: 'Technical Form' },
+  { key: 'operation', label: 'Operation Form' },
+  { key: 'material', label: 'Final Material Report' },
+];
 
 const FormBuilder = () => {
   const [department, setDepartment] = useState('sto');
@@ -85,19 +96,22 @@ const FormBuilder = () => {
     }
   };
 
-  // Options input dikhega select AUR checkbox dono ke liye
+  // Options input dikhega select AUR checkbox dono ke liye.
   const needsOptions = (type) => type === 'select' || type === 'checkbox';
 
   return (
     <div className="space-y-5">
-      <div className="flex gap-2">
-        {['sto', 'technical', 'operation'].map((d) => (
-          <button key={d} onClick={() => setDepartment(d)}
-            className="px-4 py-2 rounded-lg text-sm font-medium capitalize transition"
-            style={department === d
+      <div className="flex gap-2 flex-wrap">
+        {departments.map((d) => (
+          <button
+            key={d.key}
+            onClick={() => setDepartment(d.key)}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition"
+            style={department === d.key
               ? { background: 'var(--accent)', color: '#fff' }
-              : { background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-            {d} Form
+              : { background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+          >
+            {d.label}
           </button>
         ))}
       </div>

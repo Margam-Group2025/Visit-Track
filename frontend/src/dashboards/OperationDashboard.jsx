@@ -12,7 +12,7 @@ import { markCaseViewed } from '../api/caseApi';
 import { getTemplate } from '../api/formTemplateApi';
 import { getOperationPendingCases, submitOperationReview, getMyCases } from '../api/caseApi';
 import LeadInfoCard from '../components/LeadInfoCard';
-
+import MaterialReportPanel from '../components/MaterialReportPanel';
 const OperationDashboard = () => {
   const [tab, setTab] = useState('pending'); // 'pending' or 'mycases'
 
@@ -87,6 +87,7 @@ const OperationDashboard = () => {
         {[
           { key: 'pending', label: `Pending (${cases.length})` },
           { key: 'mycases', label: `My Cases (${myCases.length})` },
+          { key: 'material', label: 'Material Report' },
         ].map((t) => (
           <button
             key={t.key}
@@ -106,7 +107,9 @@ const OperationDashboard = () => {
         ))}
       </div>
 
-      {tab === 'mycases' ? (
+      {tab === 'material' ? (
+        <MaterialReportPanel />
+      ) : tab === 'mycases' ? (
         <MyCasesList
           cases={myCases}
           expandedCase={expandedCase}

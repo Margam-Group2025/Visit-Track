@@ -103,3 +103,27 @@ export const reassignTechnical = async (id, assignedTechnical) => {
   const { data } = await api.put(`/cases/${id}/reassign-technical`, { assignedTechnical });
   return data;
 };
+export const getMaterialPendingCases = async () => {
+  const { data } = await api.get('/cases/material-pending');
+  return data;
+};
+
+export const submitMaterialReport = async (id, formData) => {
+  const { data } = await api.put(`/cases/${id}/material-report`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+};
+
+export const getMaterialReports = async () => {
+  const { data } = await api.get('/cases/material-reports');
+  return data;
+};
+
+export const getCaseReportPDF = async (id, reportType) => {
+  const { data } = await api.get(`/cases/${id}/report-pdf?reportType=${reportType}`, {
+    responseType: 'blob',
+  });
+  return data;
+};
+

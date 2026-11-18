@@ -10,7 +10,8 @@ const statusOptions = [
   { value: 'completed', label: 'Completed' },
   { value: 'rejected', label: 'Rejected' },
   { value: 'accounts_pending', label: 'Accounts Pending' },
-{ value: 'invoiced', label: 'Invoiced' },
+  { value: 'invoiced', label: 'Invoiced' },
+  { value: 'material_submitted', label: 'Material Report Done' },
 ];
 
 const inputStyle = { background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text-h)' };

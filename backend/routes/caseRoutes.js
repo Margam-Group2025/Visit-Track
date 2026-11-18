@@ -22,6 +22,9 @@ const {
   getAccountsPendingCases,
   uploadInvoice,
   reassignTechnical,
+  getMaterialPendingCases,
+  submitMaterialReport,
+  getMaterialReports,
 } = require('../controllers/caseController');
 const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 const upload = require('../middleware/upload');
@@ -37,6 +40,10 @@ router.get('/all', verifyToken, checkRole('admin'), getAllCasesForAdmin);
 router.get('/crm-users', verifyToken, checkRole('admin'), getCrmUsers);
 router.get('/technical-users', verifyToken, checkRole('sto'), getTechnicalUsers);
 router.get('/accounts-pending', verifyToken, checkRole('accountant'), getAccountsPendingCases);
+router.get('/material-pending', verifyToken, checkRole('operation'), getMaterialPendingCases);
+router.get('/material-reports', verifyToken, checkRole('procurement', 'site_supervisor'), getMaterialReports);
+router.put('/:id/material-report', verifyToken, checkRole('operation'), upload.array('files', 5), submitMaterialReport);
+router.put('/:id/upload-invoice', verifyToken, checkRole('accountant'), upload.single('invoiceFile'), uploadInvoice);
 router.get('/:id', verifyToken, getCaseById);
 router.put(
   '/:id/technical-review',

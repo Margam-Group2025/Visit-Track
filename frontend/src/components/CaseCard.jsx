@@ -12,6 +12,7 @@ const statusLabels = {
   rejected: 'Rejected',
   accounts_pending: 'Accounts Pending',
   invoiced: 'Invoiced',
+  material_submitted: 'Material Report Submitted',
 
 };
 
@@ -25,6 +26,7 @@ const statusColors = {
   rejected: { bg: '#fee2e2', text: '#dc2626' },
   accounts_pending: { bg: '#e0f2fe', text: '#0369a1' },
   invoiced: { bg: '#ede9fe', text: '#6d28d9' },
+  material_submitted: { bg: '#fef3c7', text: '#b45309' },
 };
 
 const CaseCard = ({ c, onClick, index = 0 }) => {

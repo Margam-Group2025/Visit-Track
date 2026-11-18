@@ -620,7 +620,64 @@ const reassignTechnical = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// GET /api/cases/material-pending  (Operation: invoice ho chuke cases)
+const getMaterialPendingCases = async (req, res) => {
+  try {
+    const cases = await Case.find({ status: 'invoiced' })
+      .populate('leadId', 'leadId customerName phone email location notes')
+      .sort({ 'accountsInvoice.uploadedAt': -1 });
+    res.json(cases);
+  } catch (error) {
+    console.error('getMaterialPendingCases error:', error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
 
+// PUT /api/cases/:id/material-report  (Operation final material report submit)
+const submitMaterialReport = async (req, res) => {
+  try {
+    const { data } = req.body;
+    const parsedData = typeof data === 'string' ? JSON.parse(data) : data || {};
+
+    const singleCase = await Case.findById(req.params.id);
+    if (!singleCase) return res.status(404).json({ message: 'Case not found' });
+    if (singleCase.status !== 'invoiced') {
+      return res.status(400).json({ message: 'Material report is not pending for this case' });
+    }
+
+    const files = (req.files || []).map((f) => ({ fileName: f.originalname, fileUrl: f.path }));
+
+    singleCase.materialReport = {
+      data: parsedData,
+      files,
+      preparedBy: req.user._id,
+      submittedAt: new Date(),
+    };
+    singleCase.status = 'material_submitted';
+    logActivity(singleCase, req.user, 'material_submitted', 'Operation submitted final material report');
+    await singleCase.save();
+
+    res.json(singleCase);
+  } catch (error) {
+    console.error('submitMaterialReport error:', error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// GET /api/cases/material-reports  (Procurement + Site Supervisor)
+const getMaterialReports = async (req, res) => {
+  try {
+    const cases = await Case.find({ 'materialReport.submittedAt': { $ne: null } })
+      .populate('leadId', 'leadId customerName phone email location notes')
+      .populate('materialReport.preparedBy', 'name')
+      .populate('activityLog.by', 'name')
+      .sort({ 'materialReport.submittedAt': -1 });
+    res.json(cases);
+  } catch (error) {
+    console.error('getMaterialReports error:', error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
 const leadPopulate = {
   path: 'leadId',
   populate: [
@@ -653,4 +710,7 @@ module.exports = {
   uploadInvoice,
   reassignTechnical,
   leadPopulate,
+  getMaterialPendingCases,
+  submitMaterialReport,
+  getMaterialReports,
 };

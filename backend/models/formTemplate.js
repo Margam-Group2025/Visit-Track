@@ -16,7 +16,7 @@ const fieldSchema = new mongoose.Schema({
 const formTemplateSchema = new mongoose.Schema({
   department: {
     type: String,
-    enum: ['sto', 'technical', 'operation'],
+    enum: ['sto', 'technical', 'operation' , 'material'],
     required: true,
     unique: true,
   },

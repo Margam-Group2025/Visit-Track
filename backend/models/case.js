@@ -42,6 +42,7 @@ const caseSchema = new mongoose.Schema(
         'invoiced',
         'completed',
         'rejected',
+        'material_submitted'
       ],
       default: 'sto_pending',
     },
@@ -107,6 +108,12 @@ const caseSchema = new mongoose.Schema(
       uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
       uploadedAt: Date,
     },
+    materialReport: {
+      data: { type: mongoose.Schema.Types.Mixed, default: {} },
+      files: [fileSchema],
+      preparedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      submittedAt: Date,
+   },
   },
   { timestamps: true }
 );

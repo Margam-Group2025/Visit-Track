@@ -9,6 +9,7 @@ const stages = [
   { key: 'crmAssignment', label: 'CRM Assigned' },
   { key: 'crmCompletion', label: 'CRM Completed & Amount Submitted' },
   { key: 'accountsInvoice', label: 'Invoice Uploaded' },
+  { key: 'materialReport', label: 'Final Material Report' },
 ];
 
 

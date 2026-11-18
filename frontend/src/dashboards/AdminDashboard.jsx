@@ -737,7 +737,7 @@ const AdminDashboard = () => {
                   </form>
                 )}
 
-                {['crm_assigned', 'accounts_pending', 'invoiced'].includes(selectedCase.status) && (
+                {['crm_assigned', 'accounts_pending', 'invoiced', 'material_submitted'].includes(selectedCase.status) && (
                   <div
                     className="space-y-4"
                     style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}
@@ -751,7 +751,7 @@ const AdminDashboard = () => {
                       </div>
                     )}
 
-                    {selectedCase.status === 'invoiced' ? (
+                    {selectedCase.status === 'material_submitted' ? (
                       <motion.button
                         whileTap={{ scale: 0.98 }}
                         onClick={handleMarkCompleted}
@@ -764,9 +764,11 @@ const AdminDashboard = () => {
                       </motion.button>
                     ) : (
                       <p className="text-xs text-[var(--text-muted)]">
-                        {selectedCase.status === 'crm_assigned'
-                          ? 'Waiting for CRM to complete the work.'
-                          : 'Waiting for Accounts to upload the invoice.'}
+                        {{
+                          crm_assigned: 'Waiting for CRM to complete the work.',
+                          accounts_pending: 'Waiting for Accounts to upload the invoice.',
+                          invoiced: 'Waiting for Operation to submit the final material report.',
+                        }[selectedCase.status]}
                       </p>
                     )}
                   </div>

@@ -1,9 +1,11 @@
-import react from 'react'
+import { HardHat } from 'lucide-react';
+import DashboardLayout from '../components/DashboardLayout';
+import MaterialReportsBoard from '../components/MaterialReportsBoard';
 
-const SiteSupervisorDashboard = () => {
-  return (
-    <div>SiteSupervisorDashboard</div>
-  )
-}
+const SiteSupervisorDashboard = () => (
+  <DashboardLayout title="Site Supervisor Portal" subtitle="Work details for each lead" icon={HardHat}>
+    <MaterialReportsBoard emptyText="No work details received yet." />
+  </DashboardLayout>
+);
 
-export default SiteSupervisorDashboard
+export default SiteSupervisorDashboard;
