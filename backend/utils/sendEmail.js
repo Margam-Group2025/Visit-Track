@@ -1,18 +1,15 @@
-const sendEmail = async (to, subject, text) => {
-  const body = `${text}\n\n— SiteFlow\n${process.env.FRONTEND_URL || ''}`;
+const sendEmail = async (to, subject, text, html) => {
   try {
+    const payload = { from: process.env.EMAIL_FROM, to: [to], subject, text };
+    if (html) payload.html = html;
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: process.env.EMAIL_FROM,
-        to: [to],
-        subject,
-        text: body,
-      }),
+      body: JSON.stringify(payload),
     });
     const result = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(`${res.status} ${result.name || ''} ${result.message || ''}`);

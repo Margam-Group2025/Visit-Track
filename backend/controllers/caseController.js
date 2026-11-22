@@ -2,9 +2,8 @@ const User = require('../models/user');
 const Case = require('../models/case');
 const Lead = require('../models/lead');
 const logActivity = require('../utils/logActivity');
-// const { notifyRole, notifyUser } = require('../utils/notify');
-const { notifyRole, notifyUser } = require('../utils/notify');
-// CREATE CASE - STO assigns Technical member
+const mailEvents = require('../utils/mailEvents')
+
 const createCase = async (req, res) => {
   try {
     const { siteName, siteAddress, data, leadId, assignedTechnical } = req.body;
@@ -54,16 +53,7 @@ const createCase = async (req, res) => {
         await newCase.save();
       }
     }
-    notifyUser(techUser._id, `New case for review — ${newCase.caseNumber}`, {
-  c: newCase,
-  done: 'STO has submitted the site visit report and assigned the case to you.',
-  next: 'Open the case in Pending Cases to complete the technical review and approve it.',
-});
-notifyRole('admin', `[Update] STO report submitted — ${newCase.caseNumber}`, {
-  c: newCase,
-  done: `STO has submitted the site visit report. The case is now with ${techUser.name} (Technical).`,
-});
-
+    mailEvents.stoSubmitted({ c: newCase, tech: techUser });
     res.status(201).json(newCase);
   } catch (error) {
     console.error('createCase error:', error);
@@ -162,16 +152,9 @@ const submitTechnicalReview = async (req, res) => {
     );
 
     singleCase.status = 'operation_pending';
-   notifyRole('operation', `Ready for final report — ${singleCase.caseNumber}`, {
-  c: singleCase,
-  done: 'Technical review is complete and approved.',
-  next: 'Prepare the final report and quotation, then send them to Admin for approval.',
-});
-notifyRole('admin', `[Update] Technical review done — ${singleCase.caseNumber}`, {
-  c: singleCase,
-  done: 'Technical review is complete. The case is now with the Operations team.',
-});
+  
     await singleCase.save();
+    mailEvents.technicalApproved({ c: singleCase, tech: req.user });
     res.json(singleCase);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -238,13 +221,8 @@ const submitOperationReview = async (req, res) => {
     );
 
     singleCase.status = 'admin_pending';
-  notifyRole('admin', `Approval needed — ${singleCase.caseNumber}`, {
-  c: singleCase,
-  done: 'Operations has sent the final report and quotation.',
-  next: 'Review and approve the report, then assign it to a CRM member.',
-});
-
     await singleCase.save();
+    mailEvents.operationSubmitted({ c: singleCase });
     res.json(singleCase);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -334,13 +312,8 @@ const adminApproveAndAssign = async (req, res) => {
     );
 
     singleCase.status = 'crm_assigned';
-   notifyUser(assignedTo, `Case assigned to you — ${singleCase.caseNumber}`, {
-  c: singleCase,
-  done: 'Admin has approved the case and assigned it to you.',
-  next: `Complete the work with the customer and submit the collected amount. Admin's note: ${notes || 'None'}`,
-});
     await singleCase.save();
-    res.json(singleCase);
+  mailEvents.crmAssigned({ c: singleCase, assignedTo, notes });    res.json(singleCase);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -419,6 +392,7 @@ if (singleCase.crmAssignment?.assignedTo) {
   });
 }
     await singleCase.save();
+    mailEvents.caseCompleted({ c: singleCase });
     res.json(singleCase);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -570,15 +544,7 @@ const crmSubmitCompletion = async (req, res) => {
     singleCase.status = 'accounts_pending';
     logActivity(singleCase, req.user, 'crm_completed', `CRM completed work and submitted amount ₹${amount.toLocaleString('en-IN')}`);
     await singleCase.save();
-  notifyRole('accountant', `Invoice required — ${singleCase.caseNumber}`, {
-  c: singleCase,
-  done: `CRM completed the work and submitted ₹${amount.toLocaleString('en-IN')} collected from the customer.`,
-  next: 'Open the case to check customer details and upload the invoice.',
-});
-notifyRole('admin', `[Update] CRM submitted amount — ${singleCase.caseNumber}`, {
-  c: singleCase,
-  done: 'CRM has completed the work. The case is now with Accounts for invoicing.',
-});
+    mailEvents.crmCompleted({ c: singleCase, amount });
     res.json(singleCase);
   } catch (error) {
     console.error('crmSubmitCompletion error:', error);
@@ -622,15 +588,7 @@ const uploadInvoice = async (req, res) => {
     singleCase.status = 'invoiced';
     logActivity(singleCase, req.user, 'invoice_uploaded', `Accounts uploaded invoice${invoiceNumber ? ` ${invoiceNumber}` : ''}`);
     await singleCase.save();
-   notifyRole('operation', `Prepare material report — ${singleCase.caseNumber}`, {
-  c: singleCase,
-  done: 'Accounts has uploaded the invoice.',
-  next: 'Fill out and submit the final material report in the Material Report tab.',
-  });
-  notifyRole('admin', `[Update] Invoice uploaded — ${singleCase.caseNumber}`, {
-  c: singleCase,
-  done: 'Accounts has uploaded the invoice. Operations will now prepare the final material report.',
-   });
+   mailEvents.invoiceUploaded({ c: singleCase });
     res.json(singleCase);
   } catch (error) {
     console.error('uploadInvoice error:', error);
@@ -662,11 +620,7 @@ const reassignTechnical = async (req, res) => {
     await singleCase.save();
 
     const populated = await Case.findById(singleCase._id).populate('assignedTechnical', 'name email');
-    notifyUser(techUser._id, `Case assigned to you — ${singleCase.caseNumber}`, {
-  c: singleCase,
-  done: 'STO has assigned this case to you.',
-  next: 'Review and approve it in Pending Cases.',
-});
+    mailEvents.technicalReassigned({ c: singleCase, tech: techUser });
     res.json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -708,21 +662,7 @@ const submitMaterialReport = async (req, res) => {
     singleCase.status = 'material_submitted';
     logActivity(singleCase, req.user, 'material_submitted', 'Operation submitted final material report');
     await singleCase.save();
-  notifyRole('procurement', `Material report received — ${singleCase.caseNumber}`, {
-  c: singleCase,
-  done: 'Operations has submitted the final material report.',
-  next: 'Check the report in the Dashboard and start arranging the materials.',
-});
-notifyRole('site_supervisor', `Work details received — ${singleCase.caseNumber}`, {
-  c: singleCase,
-  done: 'Operations has submitted the final material report containing the work details for this lead.',
-  next: 'Check the report in the Dashboard and prepare for on-site work.',
-});
-notifyRole('admin', `[Update] Material report submitted — ${singleCase.caseNumber}`, {
-  c: singleCase,
-  done: 'Operations has sent the final material report. Procurement and the Site Supervisor have been notified.',
-  next: 'Mark the case as Completed once the work is finished.',
-});
+    mailEvents.materialReportSubmitted({ c: singleCase });
     res.json(singleCase);
   } catch (error) {
     console.error('submitMaterialReport error:', error.message);

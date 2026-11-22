@@ -1,7 +1,7 @@
 const Lead = require('../models/lead');
 const User = require('../models/user');
 const sendEmail = require('../utils/sendEmail');
-const { notifyRole, notifyUser } = require('../utils/notify');
+const mailEvents = require('../utils/mailEvents');
 // const { notifyRole, notifyUser } = require('../utils/notify');
 // POST /api/leads (CRM naya lead banata hai)
 const createLead = async (req, res) => {
@@ -20,6 +20,7 @@ const createLead = async (req, res) => {
     });
 
     await lead.save();
+    mailEvents.leadAssigned({ lead, sto, by: req.user });
     res.status(201).json(lead);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -87,15 +88,6 @@ const assignLead = async (req, res) => {
     lead.assignedAt = new Date();
     lead.viewedAt = null;
     await lead.save();
-
-  //  Email snippet will go here
-    notifyUser(sto._id, `New lead assigned to you — ${lead.leadId || lead.customerName}`, {
-      done: `CRM has assigned a lead to you.\n\nCustomer: ${lead.customerName}\nPhone: ${lead.phone}\nLocation: ${lead.location}`,
-      next: 'Go to Assigned Leads, click Start Visit to conduct the site visit, and submit the form.',
-    });
-    notifyRole('admin', `[Update] Lead assigned — ${lead.customerName}`, {
-      done: `${req.user.name} (CRM) assigned lead ${lead.customerName} to ${sto.name} (STO).`,
-    });
 
     res.json(lead);
   } catch (error) {
