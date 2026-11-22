@@ -1,6 +1,7 @@
 const Lead = require('../models/lead');
 const User = require('../models/user');
 const sendEmail = require('../utils/sendEmail');
+const { notifyRole, notifyUser } = require('../utils/notify');
 // const { notifyRole, notifyUser } = require('../utils/notify');
 // POST /api/leads (CRM naya lead banata hai)
 const createLead = async (req, res) => {
@@ -84,19 +85,17 @@ const assignLead = async (req, res) => {
     lead.assignedTo = sto._id;
     lead.status = 'assigned';
     lead.assignedAt = new Date();
-    lead.viewedAt = null; // naye STO ka "seen" fresh track hoga
+    lead.viewedAt = null;
     await lead.save();
 
-    // Safely send email
-    try {
-      await sendEmail(
-        sto.email,
-        'New Lead Assigned for Site Visit',
-        `A new lead (${lead.leadId}) has been assigned to you.\n\nCustomer: ${lead.customerName}\nPhone: ${lead.phone}\nLocation: ${lead.location}`
-      );
-    } catch (emailError) {
-      console.error('Failed to send assignment email:', emailError.message);
-    }
+  //  Email snippet will go here
+    notifyUser(sto._id, `New lead assigned to you — ${lead.leadId || lead.customerName}`, {
+      done: `CRM has assigned a lead to you.\n\nCustomer: ${lead.customerName}\nPhone: ${lead.phone}\nLocation: ${lead.location}`,
+      next: 'Go to Assigned Leads, click Start Visit to conduct the site visit, and submit the form.',
+    });
+    notifyRole('admin', `[Update] Lead assigned — ${lead.customerName}`, {
+      done: `${req.user.name} (CRM) assigned lead ${lead.customerName} to ${sto.name} (STO).`,
+    });
 
     res.json(lead);
   } catch (error) {
