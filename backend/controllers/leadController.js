@@ -1,12 +1,15 @@
 const Lead = require('../models/lead');
 const User = require('../models/user');
 const mailEvents = require('../utils/mailEvents');
-
+const nextLeadId = require('../utils/nextLeadId');
 const createLead = async (req, res) => {
   try {
     const { customerName, phone, email, location, notes } = req.body;
 
-    const lead = new Lead({
+    const leadId = await nextLeadId();
+
+    const lead = await Lead.create({
+      leadId,
       customerName,
       phone,
       email,
@@ -15,14 +18,12 @@ const createLead = async (req, res) => {
       createdBy: req.user._id,
     });
 
-    await lead.save();
-    mailEvents.leadAssigned({ lead, sto, by: req.user });
     res.status(201).json(lead);
   } catch (error) {
+    console.error('createLead error:', error.message);
     res.status(500).json({ message: error.message });
   }
 };
-
 // GET /api/leads (CRM apne banaye leads dekhe)
 const getMyLeads = async (req, res) => {
   try {
@@ -84,7 +85,8 @@ const assignLead = async (req, res) => {
     lead.assignedAt = new Date();
     lead.viewedAt = null;
     await lead.save();
-
+console.log('assignLead: sending mail to', sto.email);
+mailEvents.leadAssigned({ lead, sto, by: req.user });
     res.json(lead);
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -83,6 +83,7 @@ const getTechnicalPendingCases = async (req, res) => {
     })
       .populate('stoForm.submittedBy', 'name email')
       .populate('assignedTechnical', 'name email')
+      .populate(leadPopulate)
       .sort({ createdAt: -1 });
 
     res.json(cases);
@@ -313,7 +314,8 @@ const adminApproveAndAssign = async (req, res) => {
 
     singleCase.status = 'crm_assigned';
     await singleCase.save();
-  mailEvents.crmAssigned({ c: singleCase, assignedTo, notes });    res.json(singleCase);
+  mailEvents.crmAssigned({ c: singleCase, assignedTo, notes }); 
+   res.json(singleCase);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -323,7 +325,7 @@ const adminApproveAndAssign = async (req, res) => {
 const getCrmAssignedCases = async (req, res) => {
   try {
     const cases = await Case.find({
-    status: { $in: ['crm_assigned', 'accounts_pending', 'invoiced', 'completed'] },
+    status: { $in: ['crm_assigned', 'accounts_pending', 'invoiced', 'material_submitted', 'completed'] },
       'crmAssignment.assignedTo': req.user._id,
     })
       .populate('stoForm.submittedBy', 'name email')
@@ -358,6 +360,7 @@ const getMyCases = async (req, res) => {
       .populate('crmAssignment.assignedTo', 'name')
       .populate('assignedTechnical', 'name email')
       .populate('activityLog.by', 'name')
+      .populate(leadPopulate)
       .sort({ createdAt: -1 });
 
     res.json(cases);
@@ -370,31 +373,21 @@ const getMyCases = async (req, res) => {
 const markCaseCompleted = async (req, res) => {
   try {
     const singleCase = await Case.findById(req.params.id);
+    if (!singleCase) return res.status(404).json({ message: 'Case not found' });
 
-   if (singleCase.status !== 'invoiced') {
-  return res.status(400).json({ message: 'Invoice has not been uploaded yet' });
-}
+    if (singleCase.status !== 'material_submitted') {
+      return res.status(400).json({ message: 'Final material report has not been submitted yet' });
+    }
 
     singleCase.completedAt = new Date();
-
-    logActivity(
-      singleCase,
-      req.user,
-      'completed',
-      'Admin marked case as completed'
-    );
-
+    logActivity(singleCase, req.user, 'completed', 'Admin marked case as completed');
     singleCase.status = 'completed';
-if (singleCase.crmAssignment?.assignedTo) {
-  notifyUser(singleCase.crmAssignment.assignedTo, `Case completed — ${singleCase.caseNumber}`, {
-    c: singleCase,
-    done: 'Admin has marked this case as Completed.',
-  });
-}
     await singleCase.save();
+
     mailEvents.caseCompleted({ c: singleCase });
     res.json(singleCase);
   } catch (error) {
+    console.error('markCaseCompleted error:', error.message);
     res.status(500).json({ message: error.message });
   }
 };
@@ -662,7 +655,7 @@ const submitMaterialReport = async (req, res) => {
     singleCase.status = 'material_submitted';
     logActivity(singleCase, req.user, 'material_submitted', 'Operation submitted final material report');
     await singleCase.save();
-    mailEvents.materialReportSubmitted({ c: singleCase });
+    mailEvents.materialSubmitted({ c: singleCase });
     res.json(singleCase);
   } catch (error) {
     console.error('submitMaterialReport error:', error.message);
