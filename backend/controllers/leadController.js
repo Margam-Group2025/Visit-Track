@@ -1,15 +1,11 @@
 const Lead = require('../models/lead');
 const User = require('../models/user');
-const sendEmail = require('../utils/sendEmail');
 const mailEvents = require('../utils/mailEvents');
-// const { notifyRole, notifyUser } = require('../utils/notify');
-// POST /api/leads (CRM naya lead banata hai)
+
 const createLead = async (req, res) => {
   try {
     const { customerName, phone, email, location, notes } = req.body;
 
-    // leadId yahan pass karne ki zaroorat nahi hai.
-    // Schema ka pre-save hook apne aap sequence ke hisab se LD-BNB001, LD-BNB002... set kar dega.
     const lead = new Lead({
       customerName,
       phone,
